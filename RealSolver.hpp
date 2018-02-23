@@ -2,8 +2,9 @@
 #define ZSVM_REAL_SOLVER_HPP_INCLUDED
 
 // C++ standard library headers
-#include <cstdint>
+#include <cstddef>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 // Eigen linear algebra library headers
@@ -11,6 +12,7 @@
 
 // Project-specific headers
 #include "Particle.hpp"
+#include "Permutation.hpp"
 #include "JacobiCoordinates.hpp"
 
 namespace zsvm {
@@ -26,6 +28,10 @@ namespace zsvm {
         std::vector<double> masses;
         std::vector<double> charges;
         std::vector<Spin> spins;
+
+        Eigen::MatrixXd u;
+        Eigen::MatrixXd v;
+        std::vector<std::vector<std::size_t>> allowed_permutations;
 
     public: // ===================================================== CONSTRUCTOR
 
@@ -50,10 +56,17 @@ namespace zsvm {
                 charges[i] = particles[i].charge;
                 spins[i] = particles[i].spin;
             }
-            const Eigen::MatrixXd u =
-                    jaco::transformation_matrix(masses);
-            const Eigen::MatrixXd v =
-                    jaco::transformation_matrix_inverse(masses);
+            u = jaco::transformation_matrix(masses);
+            v = jaco::transformation_matrix_inverse(masses);
+            allowed_permutations = dznl::invariant_permutations(particle_types);
+            std::cout << "Order of particle exchange symmetry group: "
+                      << allowed_permutations.size() << '\n';
+            for (const auto &permutation : allowed_permutations) {
+                for (const auto &index : permutation) {
+                    std::cout << index;
+                }
+                std::cout << '\n';
+            }
 
         }
 
