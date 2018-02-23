@@ -29,9 +29,10 @@ namespace zsvm {
         std::vector<double> charges;
         std::vector<Spin> spins;
 
+        Eigen::MatrixXd inverse_mass_matrix;
+        Eigen::MatrixXd pairwise_weights;
         std::vector<std::vector<std::size_t>> allowed_permutations;
         std::vector<Eigen::MatrixXd> permutation_matrices;
-        Eigen::MatrixXd lambda;
 
     public: // ===================================================== CONSTRUCTOR
 
@@ -56,6 +57,10 @@ namespace zsvm {
                 charges[i] = particles[i].charge;
                 spins[i] = particles[i].spin;
             }
+            inverse_mass_matrix = jaco::reduced_inverse_mass_matrix(masses);
+            std::cout << inverse_mass_matrix << std::endl;
+            pairwise_weights = jaco::pairwise_weights(masses);
+            std::cout << pairwise_weights << std::endl;
             allowed_permutations = dznl::invariant_permutations(particle_types);
             std::cout << "Order of particle exchange symmetry group: "
                       << allowed_permutations.size() << '\n';
@@ -70,8 +75,6 @@ namespace zsvm {
             for (const auto &matrix : permutation_matrices) {
                 std::cout << matrix << '\n';
             }
-            lambda = jaco::reduced_inverse_mass_matrix(masses);
-            std::cout << lambda << std::endl;
         }
 
     }; // class RealSolver

@@ -91,6 +91,26 @@ namespace jaco {
         return r;
     }
 
+    Eigen::MatrixXd pairwise_weights(const std::vector<double> &masses) {
+        const std::size_t n = masses.size();
+        if (n == 0) {
+            throw std::invalid_argument(
+                    "pairwise_weights received empty vector of masses");
+        }
+        const std::size_t num_pairs = n * (n - 1) / 2;
+        const Eigen::MatrixXd v = transformation_matrix_inverse(masses);
+        Eigen::MatrixXd result(num_pairs, n - 1);
+        std::size_t k = 0;
+        for (std::size_t i = 0; i < n - 1; ++i) {
+            for (std::size_t j = i + 1; j < n; ++j, ++k) {
+                for (std::size_t m = 0; m < n - 1; ++m) {
+                    result(k, m) = v(i, m) - v(j, m);
+                }
+            }
+        }
+        return result;
+    }
+
     std::vector<Eigen::MatrixXd> permutation_matrices(
             const std::vector<double> &masses,
             const std::vector<std::vector<std::size_t>> &permutations) {
