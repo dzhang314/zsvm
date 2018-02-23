@@ -10,7 +10,7 @@ namespace dznl {
 
     template <typename T>
     bool is_invariant_permutation(const std::vector<T> &items,
-                                  const std::vector<std::size_t> permutation) {
+                                  const std::vector<std::size_t> &permutation) {
         const std::size_t n = items.size();
         if (permutation.size() != n) {
             throw std::invalid_argument(

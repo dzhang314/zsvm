@@ -9,8 +9,7 @@
 
 namespace jaco {
 
-    Eigen::MatrixXd transformation_matrix(
-            const std::vector<double> &masses) {
+    Eigen::MatrixXd transformation_matrix(const std::vector<double> &masses) {
         const std::size_t n = masses.size();
         std::vector<double> mass_sums(n);
         if (n > 0) { mass_sums[0] = masses[0]; }
@@ -55,6 +54,22 @@ namespace jaco {
             }
         }
         return v;
+    }
+
+    Eigen::MatrixXd inverse_mass_matrix(const std::vector<double> &masses) {
+        const std::size_t n = masses.size();
+        const Eigen::MatrixXd u = transformation_matrix(masses);
+        Eigen::MatrixXd inverse_masses(n, n);
+        for (std::size_t i = 0; i < n; ++i) {
+            for (std::size_t j = 0; j < n; ++j) {
+                if (i == j) {
+                    inverse_masses(i, j) = 1.0 / masses[i];
+                } else {
+                    inverse_masses(i, j) = 0.0;
+                }
+            }
+        }
+        return u * inverse_masses * u.transpose();
     }
 
 } // namespace jaco
