@@ -29,9 +29,9 @@ namespace zsvm {
         std::vector<double> charges;
         std::vector<Spin> spins;
 
-        Eigen::MatrixXd u;
-        Eigen::MatrixXd v;
         std::vector<std::vector<std::size_t>> allowed_permutations;
+        std::vector<Eigen::MatrixXd> permutation_matrices;
+        Eigen::MatrixXd lambda;
 
     public: // ===================================================== CONSTRUCTOR
 
@@ -45,7 +45,7 @@ namespace zsvm {
             if (num_particles < 2) {
                 throw std::invalid_argument(
                         "Attempted to construct SVMSolver "
-                                "with fewer than 2 particles.");
+                                "with fewer than 2 particles");
             }
             std::cout << "Constructing SVMSolver with "
                       << num_particles << " particles.\n";
@@ -56,8 +56,6 @@ namespace zsvm {
                 charges[i] = particles[i].charge;
                 spins[i] = particles[i].spin;
             }
-            u = jaco::transformation_matrix(masses);
-            v = jaco::transformation_matrix_inverse(masses);
             allowed_permutations = dznl::invariant_permutations(particle_types);
             std::cout << "Order of particle exchange symmetry group: "
                       << allowed_permutations.size() << '\n';
@@ -67,7 +65,13 @@ namespace zsvm {
                 }
                 std::cout << '\n';
             }
-
+            permutation_matrices =
+                    jaco::permutation_matrices(masses, allowed_permutations);
+            for (const auto &matrix : permutation_matrices) {
+                std::cout << matrix << '\n';
+            }
+            lambda = jaco::reduced_inverse_mass_matrix(masses);
+            std::cout << lambda << std::endl;
         }
 
     }; // class RealSolver

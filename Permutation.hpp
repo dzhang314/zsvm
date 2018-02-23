@@ -15,7 +15,7 @@ namespace dznl {
         if (permutation.size() != n) {
             throw std::invalid_argument(
                     "is_invariant_permutation received item and "
-                            "permutation vectors of different sizes.");
+                            "permutation vectors of different sizes");
         }
         for (std::size_t i = 0; i < n; ++i) {
             if (!(items[i] == items[permutation[i]])) {

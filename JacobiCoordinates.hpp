@@ -2,6 +2,7 @@
 #define ZSVM_JACOBI_COORDINATES_HPP_INCLUDED
 
 // C++ standard library headers
+#include <stdexcept>
 #include <vector>
 
 // Eigen linear algebra library headers
@@ -70,6 +71,54 @@ namespace jaco {
             }
         }
         return u * inverse_masses * u.transpose();
+    }
+
+    Eigen::MatrixXd reduced_inverse_mass_matrix(
+            const std::vector<double> &masses) {
+        const std::size_t n = masses.size();
+        if (n == 0) {
+            throw std::invalid_argument(
+                    "reduced_inverse_mass_matrix "
+                            "received empty vector of masses");
+        }
+        const Eigen::MatrixXd m = inverse_mass_matrix(masses);
+        Eigen::MatrixXd r(n - 1, n - 1);
+        for (std::size_t i = 0; i < n - 1; ++i) {
+            for (std::size_t j = 0; j < n - 1; ++j) {
+                r(i, j) = m(i, j);
+            }
+        }
+        return r;
+    }
+
+    std::vector<Eigen::MatrixXd> permutation_matrices(
+            const std::vector<double> &masses,
+            const std::vector<std::vector<std::size_t>> &permutations) {
+        const std::size_t n = masses.size();
+        if (n == 0) {
+            throw std::invalid_argument(
+                    "permutation_matrices "
+                            "received empty vector of masses");
+        }
+        const Eigen::MatrixXd u = transformation_matrix(masses);
+        const Eigen::MatrixXd v = transformation_matrix_inverse(masses);
+        std::vector<Eigen::MatrixXd> result;
+        for (const auto &permutation : permutations) {
+            Eigen::MatrixXd w(n, n);
+            for (std::size_t i = 0; i < n; ++i) {
+                for (std::size_t j = 0; j < n; ++j) {
+                    w(i, j) = v(permutation[i], j);
+                }
+            }
+            const Eigen::MatrixXd x = u * w;
+            result.emplace_back(n - 1, n - 1);
+            for (std::size_t i = 0; i < n - 1; ++i) {
+                for (std::size_t j = 0; j < n - 1; ++j) {
+                    result.back()(i, j) = x(i, j);
+                }
+            }
+        }
+        return result;
     }
 
 } // namespace jaco
