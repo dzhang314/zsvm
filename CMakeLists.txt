@@ -9,7 +9,10 @@ add_compile_options(
 
 add_executable(zsvm
         Particle.hpp
+        Particle.cpp
         Permutation.hpp
+        Permutation.cpp
         JacobiCoordinates.hpp
+        JacobiCoordinates.cpp
         RealSolver.hpp
         main.cpp)

@@ -2,9 +2,11 @@
 #define ZSVM_REAL_SOLVER_HPP_INCLUDED
 
 // C++ standard library headers
-#include <cmath> // for std::tgamma
+#include <chrono> // for std::chrono::system_clock
+#include <cmath> // for std::exp, std::tgamma
 #include <cstddef> // for std::size_t
 #include <iostream> // for std::cout
+#include <random> // for std::normal_distribution
 #include <stdexcept> // for std::invalid_argument
 #include <vector> // for std::vector
 
@@ -83,18 +85,20 @@ namespace zsvm {
             permutation_sign_matrix.setConstant(
                     allowed_permutations.size(), allowed_permutations.size(),
                     0.0);
-            for (std::size_t i = 0; i < allowed_permutations.size(); ++i) {
-                for (std::size_t j = 0; j < allowed_permutations.size(); ++j) {
+            std::size_t i = 0;
+            for (const auto &p : allowed_permutations) {
+                std::size_t j = 0;
+                for (const auto &q : allowed_permutations) {
                     const std::size_t signature =
-                            dznl::count_changes(
-                                    spins, allowed_permutations[i]) / 2 +
-                            dznl::count_changes(
-                                    spins, allowed_permutations[j]) / 2 +
-                            dznl::count_inversions(allowed_permutations[i]) +
-                            dznl::count_inversions(allowed_permutations[j]);
+                            dznl::count_changes(spins, p) / 2 +
+                            dznl::count_changes(spins, q) / 2 +
+                            dznl::count_inversions(p) +
+                            dznl::count_inversions(q);
                     permutation_sign_matrix(i, j) = (signature % 2 == 0)
                                                     ? +1.0 : -1.0;
+                    ++j;
                 }
+                ++i;
             }
             permutation_matrices =
                     jaco::permutation_matrices(masses, allowed_permutations);
@@ -187,6 +191,34 @@ namespace zsvm {
                             permutation_matrices[j].transpose() *
                             b * permutation_matrices[j]);
                 }
+            }
+            return result;
+        }
+
+    public: // ========================================= RANDOM STATE GENERATION
+
+        static std::mt19937_64 properly_seeded_random_engine() {
+            std::array<std::mt19937_64::result_type,
+                    std::mt19937_64::state_size> random_data{};
+            // IDEFIX: Empty brace initializer to prevent clang-tidy from
+            // complaining about an "uninitialized record type."
+            std::random_device source;
+            std::generate(random_data.begin(), random_data.end(),
+                          std::ref(source));
+            random_data[0] = static_cast<std::mt19937_64::result_type>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch()
+                    ).count());
+            std::seed_seq seeds(random_data.begin(), random_data.end());
+            return std::mt19937_64(seeds);
+        }
+
+        std::vector<double> random_correlation_coefficients() {
+            static std::mt19937_64 rand_eng = properly_seeded_random_engine();
+            static std::normal_distribution<double> norm_dist(0.0, 8.0);
+            std::vector<double> result;
+            for (std::size_t i = 0; i < num_pairs; ++i) {
+                result.push_back(std::exp(norm_dist(rand_eng)));
             }
             return result;
         }
