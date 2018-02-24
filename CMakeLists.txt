@@ -14,5 +14,6 @@ add_executable(zsvm
         Permutation.cpp
         JacobiCoordinates.hpp
         JacobiCoordinates.cpp
-        RealSolver.hpp
+        SphericalECGContext.hpp
+        SphericalECGContext.cpp
         main.cpp)
