@@ -3,14 +3,14 @@
 
 // C++ standard library headers
 #include <cstddef> // for std::size_t
-#include <random> // for std::mt19937_64, std::normal_distribution
+#include <random> // for std::mt19937_64
 #include <vector> // for std::vector
 
 // Eigen linear algebra library headers
-#include <Eigen/Core>
+#include <Eigen/Core> // for Eigen::MatrixXd
 
 // Project-specific headers
-#include "Particle.hpp"
+#include "Particle.hpp" // for zsvm::Particle
 
 namespace zsvm {
 

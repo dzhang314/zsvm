@@ -6,11 +6,12 @@
 #include <stdexcept> // for std::invalid_argument
 
 // Eigen linear algebra library headers
-#include <Eigen/LU>
+#include <Eigen/LU> // for inverse(), determinant()
 
 // Project-specific headers
-#include "Permutation.hpp"
-#include "JacobiCoordinates.hpp"
+#include "Permutation.hpp" // for dznl::invariant_permutations et al.
+#include "JacobiCoordinates.hpp" // for jaco::pairwise_weights et al.
+
 
 zsvm::SphericalECGContext::SphericalECGContext(
         std::size_t num_pairs,
@@ -33,6 +34,7 @@ zsvm::SphericalECGContext::SphericalECGContext(
           pairwise_charge_products(pairwise_charge_products),
           permutation_signs(permutation_signs),
           permutation_matrices(permutation_matrices) {}
+
 
 zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
         const std::vector<Particle> &particles, int space_dimension) {
@@ -98,6 +100,7 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
             jaco::permutation_matrices(masses, allowed_permutations));
 }
 
+
 Eigen::MatrixXd zsvm::SphericalECGContext::gaussian_parameter_matrix(
         const std::vector<double> &correlation_coefficients) const {
     if (correlation_coefficients.size() != num_pairs) {
@@ -113,6 +116,7 @@ Eigen::MatrixXd zsvm::SphericalECGContext::gaussian_parameter_matrix(
     }
     return a;
 }
+
 
 void zsvm::SphericalECGContext::matrix_element_kernel(
         double &overlap_kernel, double &hamiltonian_kernel,
@@ -130,6 +134,7 @@ void zsvm::SphericalECGContext::matrix_element_kernel(
     }
     hamiltonian_kernel *= dimension_factor * overlap_kernel;
 }
+
 
 void zsvm::SphericalECGContext::matrix_elements(
         double &overlap_matrix_element,
@@ -152,6 +157,7 @@ void zsvm::SphericalECGContext::matrix_elements(
     }
 }
 
+
 std::mt19937_64 zsvm::SphericalECGContext::properly_seeded_random_engine() {
     std::array<std::mt19937_64::result_type,
             std::mt19937_64::state_size> random_data;
@@ -165,6 +171,7 @@ std::mt19937_64 zsvm::SphericalECGContext::properly_seeded_random_engine() {
     std::seed_seq seeds(random_data.begin(), random_data.end());
     return std::mt19937_64(seeds);
 }
+
 
 std::vector<double>
 zsvm::SphericalECGContext::random_correlation_coefficients() {

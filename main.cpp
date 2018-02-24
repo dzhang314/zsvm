@@ -10,6 +10,7 @@
 #include "Particle.hpp"
 #include "SphericalECGContext.hpp"
 
+
 int main() {
     const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};
     const zsvm::Particle electron_down = {0, 1.0, -1.0, zsvm::Spin::DOWN};

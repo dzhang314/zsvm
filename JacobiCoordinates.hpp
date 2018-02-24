@@ -2,10 +2,10 @@
 #define ZSVM_JACOBI_COORDINATES_HPP_INCLUDED
 
 // C++ standard library headers
-#include <vector>
+#include <vector> // for std::vector
 
 // Eigen linear algebra library headers
-#include <Eigen/Core>
+#include <Eigen/Core> // for Eigen::MatrixXd
 
 namespace jaco {
 

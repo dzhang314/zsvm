@@ -2,10 +2,10 @@
 #define DZNL_PERMUTATION_HPP_INCLUDED
 
 // C++ standard library headers
-#include <vector>
+#include <vector> // for std::vector
 
 // Project-specific headers
-#include "Particle.hpp"
+#include "Particle.hpp" // for zsvm::Spin
 
 namespace dznl {
 

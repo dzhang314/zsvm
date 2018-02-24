@@ -2,7 +2,7 @@
 #define ZSVM_PARTICLE_HPP_INCLUDED
 
 // C++ standard library headers
-#include <iostream>
+#include <iostream> // for std::ostream
 
 namespace zsvm {
 

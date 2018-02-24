@@ -1,5 +1,6 @@
 #include "Particle.hpp"
 
+
 std::ostream &operator<<(std::ostream &os, zsvm::Spin spin) {
     switch (spin) {
         case zsvm::Spin::UP:
@@ -11,6 +12,7 @@ std::ostream &operator<<(std::ostream &os, zsvm::Spin spin) {
     }
     return os;
 }
+
 
 std::ostream &operator<<(std::ostream &os, const zsvm::Particle &particle) {
     return os << "Particle(type=" << particle.type

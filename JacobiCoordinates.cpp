@@ -1,7 +1,8 @@
 #include "JacobiCoordinates.hpp"
 
 // C++ standard library headers
-#include <stdexcept>
+#include <stdexcept> // for std::invalid_argument
+
 
 Eigen::MatrixXd jaco::transformation_matrix(
         const std::vector<double> &masses) {
@@ -25,6 +26,7 @@ Eigen::MatrixXd jaco::transformation_matrix(
     }
     return u;
 }
+
 
 Eigen::MatrixXd jaco::transformation_matrix_inverse(
         const std::vector<double> &masses) {
@@ -51,6 +53,7 @@ Eigen::MatrixXd jaco::transformation_matrix_inverse(
     return v;
 }
 
+
 Eigen::MatrixXd jaco::inverse_mass_matrix(
         const std::vector<double> &masses) {
     const std::size_t n = masses.size();
@@ -67,6 +70,7 @@ Eigen::MatrixXd jaco::inverse_mass_matrix(
     }
     return u * inverse_masses * u.transpose();
 }
+
 
 Eigen::MatrixXd jaco::reduced_inverse_mass_matrix(
         const std::vector<double> &masses) {
@@ -85,6 +89,7 @@ Eigen::MatrixXd jaco::reduced_inverse_mass_matrix(
     }
     return r;
 }
+
 
 Eigen::MatrixXd jaco::pairwise_weights(
         const std::vector<double> &masses) {
@@ -105,6 +110,7 @@ Eigen::MatrixXd jaco::pairwise_weights(
     }
     return result;
 }
+
 
 std::vector<Eigen::MatrixXd> jaco::permutation_matrices(
         const std::vector<double> &masses,

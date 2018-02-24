@@ -1,9 +1,10 @@
 #include "Permutation.hpp"
 
 // C++ standard library headers
-#include <algorithm>
-#include <cstddef>
-#include <stdexcept>
+#include <algorithm> // for td::next_permutation
+#include <cstddef> // for std::size_t
+#include <stdexcept> // for std::invalid_argument
+
 
 bool dznl::is_invariant_permutation(
         const std::vector<int> &items,
@@ -20,6 +21,7 @@ bool dznl::is_invariant_permutation(
     return true;
 }
 
+
 std::size_t dznl::count_changes(const std::vector<zsvm::Spin> &items,
                                 const std::vector<std::size_t> &permutation) {
     const std::size_t n = items.size();
@@ -35,6 +37,7 @@ std::size_t dznl::count_changes(const std::vector<zsvm::Spin> &items,
     return count;
 }
 
+
 std::size_t dznl::count_inversions(
         const std::vector<std::size_t> &permutation) {
     const std::size_t n = permutation.size();
@@ -46,6 +49,7 @@ std::size_t dznl::count_inversions(
     }
     return count;
 }
+
 
 std::vector<std::vector<std::size_t>> dznl::invariant_permutations(
         const std::vector<int> &items) {
