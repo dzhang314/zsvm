@@ -18,10 +18,10 @@ int main() {
 //    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
     const zsvm::Particle beryllium_nucleus = {2, 16538.028978017737,
                                               +4.0, zsvm::Spin::UP};
-    std::vector<zsvm::Particle> particles = {
+    const std::vector<zsvm::Particle> particles = {
             electron_up, electron_down, electron_up, electron_down,
             beryllium_nucleus};
-    zsvm::SphericalECGContext context =
+    const zsvm::SphericalECGContext context =
             zsvm::SphericalECGContext::create(particles, 3);
 
     std::vector<double> v = context.random_correlation_coefficients();

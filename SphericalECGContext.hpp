@@ -69,7 +69,7 @@ namespace zsvm {
 
         static std::mt19937_64 properly_seeded_random_engine();
 
-        std::vector<double> random_correlation_coefficients();
+        std::vector<double> random_correlation_coefficients() const;
 
     }; // class SphericalECGContext
 

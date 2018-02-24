@@ -162,8 +162,7 @@ std::mt19937_64 zsvm::SphericalECGContext::properly_seeded_random_engine() {
     std::array<std::mt19937_64::result_type,
             std::mt19937_64::state_size> random_data;
     std::random_device source;
-    std::generate(random_data.begin(), random_data.end(),
-                  std::ref(source));
+    std::generate(random_data.begin(), random_data.end(), std::ref(source));
     random_data[0] = static_cast<std::mt19937_64::result_type>(
             std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch()
@@ -174,15 +173,12 @@ std::mt19937_64 zsvm::SphericalECGContext::properly_seeded_random_engine() {
 
 
 std::vector<double>
-zsvm::SphericalECGContext::random_correlation_coefficients() {
-    static std::mt19937_64 random_engine =
-            properly_seeded_random_engine();
-    static std::normal_distribution<double>
-            correlation_distribution(0.0, 8.0);
-    std::vector<double> result;
+zsvm::SphericalECGContext::random_correlation_coefficients() const {
+    static std::mt19937_64 random_engine = properly_seeded_random_engine();
+    static std::normal_distribution<double> correlation_distribution(0.0, 8.0);
+    std::vector<double> result(num_pairs);
     for (std::size_t i = 0; i < num_pairs; ++i) {
-        result.push_back(std::exp(
-                correlation_distribution(random_engine)));
+        result[i] = std::exp(correlation_distribution(random_engine));
     }
     return result;
 }
