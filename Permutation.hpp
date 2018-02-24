@@ -18,11 +18,36 @@ namespace dznl {
                             "permutation vectors of different sizes");
         }
         for (std::size_t i = 0; i < n; ++i) {
-            if (!(items[i] == items[permutation[i]])) {
-                return false;
-            }
+            if (!(items[i] == items[permutation[i]])) { return false; }
         }
         return true;
+    }
+
+    template <typename T>
+    std::size_t count_changes(const std::vector<T> &items,
+                              const std::vector<std::size_t> &permutation) {
+        const std::size_t n = items.size();
+        if (permutation.size() != n) {
+            throw std::invalid_argument(
+                    "is_invariant_permutation received item and "
+                            "permutation vectors of different sizes");
+        }
+        std::size_t count = 0;
+        for (std::size_t i = 0; i < n; ++i) {
+            if (!(items[i] == items[permutation[i]])) { ++count; }
+        }
+        return count;
+    }
+
+    std::size_t count_inversions(const std::vector<std::size_t> &permutation) {
+        const std::size_t n = permutation.size();
+        std::size_t count = 0;
+        for (std::size_t i = 0; i < n; ++i) {
+            for (std::size_t j = i + 1; j < n; ++j) {
+                if (permutation[i] > permutation[j]) { ++count; }
+            }
+        }
+        return count;
     }
 
     template <typename T>

@@ -23,10 +23,13 @@ namespace zsvm {
 std::ostream &operator<<(std::ostream &os, zsvm::Spin spin) {
     switch (spin) {
         case zsvm::Spin::UP:
-            return os << "UP";
+            os << "UP";
+            break;
         case zsvm::Spin::DOWN:
-            return os << "DOWN";
+            os << "DOWN";
+            break;
     }
+    return os;
 }
 
 std::ostream &operator<<(std::ostream &os, const zsvm::Particle &particle) {

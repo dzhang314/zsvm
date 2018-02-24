@@ -99,12 +99,11 @@ namespace jaco {
         }
         const std::size_t num_pairs = n * (n - 1) / 2;
         const Eigen::MatrixXd v = transformation_matrix_inverse(masses);
-        Eigen::MatrixXd result(num_pairs, n - 1);
-        std::size_t k = 0;
-        for (std::size_t i = 0; i < n - 1; ++i) {
+        Eigen::MatrixXd result(n - 1, num_pairs);
+        for (std::size_t i = 0, k = 0; i < n - 1; ++i) {
             for (std::size_t j = i + 1; j < n; ++j, ++k) {
                 for (std::size_t m = 0; m < n - 1; ++m) {
-                    result(k, m) = v(i, m) - v(j, m);
+                    result(m, k) = v(i, m) - v(j, m);
                 }
             }
         }
