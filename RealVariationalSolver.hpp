@@ -54,12 +54,13 @@ namespace zsvm {
 
         double solve_secular_equation_bisection(
                 double lower_bound, double upper_bound,
-                double t, const Eigen::ArrayXd &beta);
+                double t, const Eigen::ArrayXd &beta) const;
 
     public: // ============================= FAST EIGENVALUE COMPUTATION METHODS
 
-        double meuds(const double *new_overlap_column,
-                     const double *new_hamiltonian_column);
+        double minimum_augmented_eigenvalue(
+                const double *new_overlap_column,
+                const double *new_hamiltonian_column);
 
     }; // class RealVariationalSolver
 

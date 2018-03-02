@@ -103,7 +103,7 @@ void zsvm::RealVariationalSolver::find_lower_bracketing_interval(
 
 double zsvm::RealVariationalSolver::solve_secular_equation_bisection(
         double lower_bound, double upper_bound,
-        double t, const Eigen::ArrayXd &beta) {
+        double t, const Eigen::ArrayXd &beta) const {
     constexpr double TOLERANCE = 1.0e-14;
     while (true) {
         const double midpoint = 0.5 * (lower_bound + upper_bound);
@@ -125,7 +125,7 @@ double zsvm::RealVariationalSolver::solve_secular_equation_bisection(
 }
 
 
-double zsvm::RealVariationalSolver::meuds(
+double zsvm::RealVariationalSolver::minimum_augmented_eigenvalue(
         const double *new_overlap_column,
         const double *new_hamiltonian_column) {
     if (!clean) { compute_eigenstates(); }

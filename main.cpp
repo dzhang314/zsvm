@@ -2,7 +2,7 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <thread>
+#include <limits>
 #include <vector>
 
 // Project-specific headers
@@ -24,89 +24,94 @@
 
 
 int main() {
-    std::cout << std::setprecision(16) << std::endl;
+    const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};
+    const zsvm::Particle electron_down = {0, 1.0, -1.0, zsvm::Spin::DOWN};
+//    const zsvm::Particle positron_up = {1, 1.0, +1.0, zsvm::Spin::UP};
+//    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
+    const zsvm::Particle beryllium_nucleus = {2, 16538.028978017737,
+                                              +4.0, zsvm::Spin::UP};
+    const std::vector<zsvm::Particle> particles = {
+            electron_up, electron_down, electron_up, electron_down,
+            beryllium_nucleus};
+    const zsvm::SphericalECGContext context =
+            zsvm::SphericalECGContext::create(particles, 3);
 
-    zsvm::RealVariationalSolver test_solver;
-    test_solver.set_basis_size_destructive(2);
-    test_solver.set_overlap_matrix_element(0, 0, +2.0);
-    test_solver.set_overlap_matrix_element(0, 1, +1.0);
-    test_solver.set_overlap_matrix_element(1, 0, +1.0);
-    test_solver.set_overlap_matrix_element(1, 1, +2.0);
-    test_solver.set_hamiltonian_matrix_element(0, 0, -3.0);
-    test_solver.set_hamiltonian_matrix_element(0, 1, +4.0);
-    test_solver.set_hamiltonian_matrix_element(1, 0, +4.0);
-    test_solver.set_hamiltonian_matrix_element(1, 1, -5.0);
+    std::size_t basis_size = 2;
+    std::vector<std::vector<double>> basis;
+    for (std::size_t i = 0; i < basis_size; ++i) {
+        basis.push_back(context.random_correlation_coefficients());
+    }
+    std::vector<Eigen::MatrixXd> basis_matrices;
+    for (const auto &correlation_coefficients : basis) {
+        basis_matrices.push_back(
+                context.gaussian_parameter_matrix(correlation_coefficients));
+    }
+    zsvm::RealVariationalSolver solver;
+    solver.set_basis_size_destructive(basis_size);
+    for (std::size_t i = 0; i < basis_size; ++i) {
+        for (std::size_t j = 0; j < basis_size; ++j) {
+            double overlap_matrix_element, hamiltonian_matrix_element;
+            context.compute_matrix_elements(
+                    overlap_matrix_element, hamiltonian_matrix_element,
+                    basis_matrices[i], basis_matrices[j]);
+            solver.set_overlap_matrix_element(
+                    i, j, overlap_matrix_element);
+            solver.set_hamiltonian_matrix_element(
+                    i, j, hamiltonian_matrix_element);
+        }
+    }
 
-    std::vector<double> new_overlap_column = {0.5, 0.25, 3.0};
-    std::vector<double> new_hamiltonian_column = {0.0, 2.0, 3.0};
-
-    std::cout << test_solver.meuds(&new_overlap_column[0],
-                                   &new_hamiltonian_column[0]);
-
-
-    zsvm::RealVariationalSolver test_solver_2;
-    test_solver_2.set_basis_size_destructive(3);
-    test_solver_2.set_overlap_matrix_element(0, 0, 2.0);
-    test_solver_2.set_overlap_matrix_element(0, 1, 1.0);
-    test_solver_2.set_overlap_matrix_element(0, 2, 0.5);
-    test_solver_2.set_overlap_matrix_element(1, 0, 1.0);
-    test_solver_2.set_overlap_matrix_element(1, 1, 2.0);
-    test_solver_2.set_overlap_matrix_element(1, 2, 0.25);
-    test_solver_2.set_overlap_matrix_element(2, 0, 0.5);
-    test_solver_2.set_overlap_matrix_element(2, 1, 0.25);
-    test_solver_2.set_overlap_matrix_element(2, 2, 3.0);
-    test_solver_2.set_hamiltonian_matrix_element(0, 0, -3.0);
-    test_solver_2.set_hamiltonian_matrix_element(0, 1, 4.0);
-    test_solver_2.set_hamiltonian_matrix_element(0, 2, 0.0);
-    test_solver_2.set_hamiltonian_matrix_element(1, 0, 4.0);
-    test_solver_2.set_hamiltonian_matrix_element(1, 1, -5.0);
-    test_solver_2.set_hamiltonian_matrix_element(1, 2, 2.0);
-    test_solver_2.set_hamiltonian_matrix_element(2, 0, 0.0);
-    test_solver_2.set_hamiltonian_matrix_element(2, 1, 2.0);
-    test_solver_2.set_hamiltonian_matrix_element(2, 2, 3.0);
-    std::cout << test_solver_2.get_eigenvalue(0) << std::endl;
-
-//    const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};
-//    const zsvm::Particle electron_down = {0, 1.0, -1.0, zsvm::Spin::DOWN};
-////    const zsvm::Particle positron_up = {1, 1.0, +1.0, zsvm::Spin::UP};
-////    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
-//    const zsvm::Particle beryllium_nucleus = {2, 16538.028978017737,
-//                                              +4.0, zsvm::Spin::UP};
-//    const std::vector<zsvm::Particle> particles = {
-//            electron_up, electron_down, electron_up, electron_down,
-//            beryllium_nucleus};
-//    const zsvm::SphericalECGContext context =
-//            zsvm::SphericalECGContext::create(particles, 3);
-//
-//    const std::size_t basis_size = 100;
-//    std::vector<std::vector<double>> basis;
-//    for (std::size_t i = 0; i < basis_size; ++i) {
-//        basis.push_back(context.random_correlation_coefficients());
-//    }
-//
-//    std::vector<Eigen::MatrixXd> basis_matrices;
-//    for (const auto &correlation_coefficients : basis) {
-//        basis_matrices.push_back(
-//                context.gaussian_parameter_matrix(correlation_coefficients));
-//    }
-//
-//    zsvm::RealVariationalSolver solver;
-//    solver.set_basis_size_destructive(basis_size);
-//
-//    for (std::size_t i = 0; i < basis_size; ++i) {
-//        for (std::size_t j = 0; j < basis_size; ++j) {
-//            double overlap_matrix_element, hamiltonian_matrix_element;
-//            context.compute_matrix_elements(
-//                    overlap_matrix_element, hamiltonian_matrix_element,
-//                    basis_matrices[i], basis_matrices[j]);
-//            solver.set_overlap_matrix_element(
-//                    i, j, overlap_matrix_element);
-//            solver.set_hamiltonian_matrix_element(
-//                    i, j, hamiltonian_matrix_element);
-//        }
-//    }
-//
-//    PRINT_EXECUTION_TIME(std::cout << solver.get_eigenvalue(0) << std::endl);
-
+    for (std::size_t basis_index = 0; basis_index < 100; ++basis_index) {
+        std::cout << "Initial energy: " << solver.get_eigenvalue(0) << std::endl;
+        std::vector<double> best_basis_element;
+        Eigen::MatrixXd best_basis_matrix;
+        double best_energy = solver.get_eigenvalue(0);
+        for (std::size_t trial_index = 0; trial_index < 100; ++trial_index) {
+            const std::vector<double> new_basis_element =
+                    context.random_correlation_coefficients();
+            const Eigen::MatrixXd new_basis_matrix =
+                    context.gaussian_parameter_matrix(new_basis_element);
+            std::vector<double> new_overlap_column, new_hamiltonian_column;
+            for (std::size_t i = 0; i < basis_size; ++i) {
+                double overlap_matrix_element, hamiltonian_matrix_element;
+                context.compute_matrix_elements(
+                        overlap_matrix_element, hamiltonian_matrix_element,
+                        basis_matrices[i], new_basis_matrix);
+                new_overlap_column.push_back(overlap_matrix_element);
+                new_hamiltonian_column.push_back(hamiltonian_matrix_element);
+            }
+            {
+                double overlap_matrix_element, hamiltonian_matrix_element;
+                context.compute_matrix_elements(
+                        overlap_matrix_element, hamiltonian_matrix_element,
+                        new_basis_matrix, new_basis_matrix);
+                new_overlap_column.push_back(overlap_matrix_element);
+                new_hamiltonian_column.push_back(hamiltonian_matrix_element);
+            }
+            const double new_energy = solver.minimum_augmented_eigenvalue(
+                    &new_overlap_column[0], &new_hamiltonian_column[0]);
+            if (new_energy < best_energy) {
+                std::cout << "Improved energy to: " << new_energy << std::endl;
+                best_basis_element = new_basis_element;
+                best_basis_matrix = new_basis_matrix;
+                best_energy = new_energy;
+            }
+        }
+        basis.push_back(best_basis_element);
+        basis_matrices.push_back(best_basis_matrix);
+        solver.set_basis_size_destructive(++basis_size);
+        for (std::size_t i = 0; i < basis_size; ++i) {
+            for (std::size_t j = 0; j < basis_size; ++j) {
+                double overlap_matrix_element, hamiltonian_matrix_element;
+                context.compute_matrix_elements(
+                        overlap_matrix_element, hamiltonian_matrix_element,
+                        basis_matrices[i], basis_matrices[j]);
+                solver.set_overlap_matrix_element(
+                        i, j, overlap_matrix_element);
+                solver.set_hamiltonian_matrix_element(
+                        i, j, hamiltonian_matrix_element);
+            }
+        }
+    }
     return 0;
 }
