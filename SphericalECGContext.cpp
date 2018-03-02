@@ -38,14 +38,12 @@ zsvm::SphericalECGContext::SphericalECGContext(
 
 zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
         const std::vector<Particle> &particles, int space_dimension) {
-
     const std::size_t num_particles = particles.size();
     if (num_particles < 2) {
         throw std::invalid_argument(
                 "Attempted to construct SVMSolver "
                         "with fewer than 2 particles");
     }
-
     std::vector<int> particle_types(num_particles);
     std::vector<double> masses(num_particles);
     std::vector<double> charges(num_particles);
@@ -56,7 +54,6 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
         charges[i] = particles[i].charge;
         spins[i] = particles[i].spin;
     }
-
     const std::size_t num_pairs =
             num_particles * (num_particles - 1) / 2;
     const Eigen::MatrixXd pairwise_weight_vectors =
@@ -67,14 +64,12 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
                 pairwise_weight_vectors.col(k) *
                 pairwise_weight_vectors.col(k).transpose());
     }
-
     std::vector<double> pairwise_charge_products(num_pairs);
     for (std::size_t i = 0, k = 0; i < num_particles - 1; ++i) {
         for (std::size_t j = i + 1; j < num_particles; ++j, ++k) {
             pairwise_charge_products[k] = charges[i] * charges[j];
         }
     }
-
     const std::vector<std::vector<std::size_t>> allowed_permutations =
             dznl::invariant_permutations(particle_types);
     std::vector<double> permutation_signs;
@@ -85,7 +80,6 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
         permutation_signs.push_back((signature % 2 == 0)
                                     ? +1.0 : -1.0);
     }
-
     return SphericalECGContext(
             num_pairs,
             allowed_permutations.size(),
@@ -136,7 +130,7 @@ void zsvm::SphericalECGContext::matrix_element_kernel(
 }
 
 
-void zsvm::SphericalECGContext::matrix_elements(
+void zsvm::SphericalECGContext::compute_matrix_elements(
         double &overlap_matrix_element,
         double &hamiltonian_matrix_element,
         const Eigen::MatrixXd &a, const Eigen::MatrixXd &b) const {

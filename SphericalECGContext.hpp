@@ -60,7 +60,7 @@ namespace zsvm {
 
     public: // ========================================== MATRIX ELEMENT METHODS
 
-        void matrix_elements(
+        void compute_matrix_elements(
                 double &overlap_matrix_element,
                 double &hamiltonian_matrix_element,
                 const Eigen::MatrixXd &a, const Eigen::MatrixXd &b) const;
