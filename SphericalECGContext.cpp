@@ -169,7 +169,7 @@ std::mt19937_64 zsvm::SphericalECGContext::properly_seeded_random_engine() {
 std::vector<double>
 zsvm::SphericalECGContext::random_correlation_coefficients() const {
     static std::mt19937_64 random_engine = properly_seeded_random_engine();
-    static std::normal_distribution<double> correlation_distribution(0.0, 8.0);
+    static std::normal_distribution<double> correlation_distribution(0.0, 2.0);
     std::vector<double> result(num_pairs);
     for (std::size_t i = 0; i < num_pairs; ++i) {
         result[i] = std::exp(correlation_distribution(random_engine));

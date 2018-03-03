@@ -56,6 +56,11 @@ void zsvm::RealVariationalSolver::compute_eigenstates() {
 }
 
 
+bool zsvm::RealVariationalSolver::empty() const {
+    return (size == 0);
+}
+
+
 double zsvm::RealVariationalSolver::get_eigenvalue(std::size_t i) {
     if (!clean) { compute_eigenstates(); }
     return eigenvalues(i);

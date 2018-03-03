@@ -40,6 +40,8 @@ namespace zsvm {
 
     public: // ======================================================== ACCESORS
 
+        bool empty() const;
+
         double get_eigenvalue(std::size_t i);
 
     private: // ========================== EIGENVALUE COMPUTATION HELPER METHODS
