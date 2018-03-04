@@ -9,6 +9,9 @@ add_compile_options(
         -Wall -Wextra -pedantic -Werror -pedantic-errors
         -O3 -march=native -mtune=native)
 
+set_source_files_properties(PackedLinearAlgebra.cpp
+        PROPERTIES COMPILE_FLAGS -ffast-math)
+
 add_executable(zsvm
         Particle.hpp
         Particle.cpp
@@ -16,6 +19,8 @@ add_executable(zsvm
         Permutation.cpp
         JacobiCoordinates.hpp
         JacobiCoordinates.cpp
+        PackedLinearAlgebra.hpp
+        PackedLinearAlgebra.cpp
         SphericalECGContext.hpp
         SphericalECGContext.cpp
         RealVariationalSolver.hpp

@@ -33,7 +33,7 @@ namespace zsvm {
         SphericalECGContext context;
         RealVariationalSolver solver;
         std::vector<std::vector<double>> basis;
-        std::vector<Eigen::MatrixXd> basis_matrices;
+        std::vector<std::vector<double>> basis_matrices;
 
     public: // ===================================================== CONSTRUCTOR
 
@@ -51,12 +51,12 @@ namespace zsvm {
     public: // =================================================================
 
         double augmented_ground_state_energy(
-                const Eigen::MatrixXd &basis_matrix) {
+                const std::vector<double> &basis_matrix) {
             if (solver.empty()) {
                 double overlap_element, hamiltonian_element;
                 context.compute_matrix_elements(
                         overlap_element, hamiltonian_element,
-                        basis_matrix, basis_matrix);
+                        basis_matrix.data(), basis_matrix.data());
                 return hamiltonian_element / overlap_element;
             } else {
                 std::vector<double> new_overlap_column, new_hamiltonian_column;
@@ -64,14 +64,14 @@ namespace zsvm {
                     double overlap_element, hamiltonian_element;
                     context.compute_matrix_elements(
                             overlap_element, hamiltonian_element,
-                            basis_matrices[i], basis_matrix);
+                            basis_matrices[i].data(), basis_matrix.data());
                     new_overlap_column.push_back(overlap_element);
                     new_hamiltonian_column.push_back(hamiltonian_element);
                 }
                 double overlap_matrix_element, hamiltonian_matrix_element;
                 context.compute_matrix_elements(
                         overlap_matrix_element, hamiltonian_matrix_element,
-                        basis_matrix, basis_matrix);
+                        basis_matrix.data(), basis_matrix.data());
                 new_overlap_column.push_back(overlap_matrix_element);
                 new_hamiltonian_column.push_back(hamiltonian_matrix_element);
                 return solver.minimum_augmented_eigenvalue(
@@ -81,14 +81,14 @@ namespace zsvm {
 
         void expand_stochastic(std::size_t num_trials) {
             std::vector<double> best_basis_element;
-            Eigen::MatrixXd best_basis_matrix;
+            std::vector<double> best_basis_matrix;
             double best_energy = solver.empty()
                                  ? std::numeric_limits<double>::max()
                                  : solver.get_eigenvalue(0);
             for (std::size_t trial = 0; trial < num_trials; ++trial) {
                 const std::vector<double> new_basis_element =
                         context.random_correlation_coefficients();
-                const Eigen::MatrixXd new_basis_matrix =
+                const std::vector<double> new_basis_matrix =
                         context.gaussian_parameter_matrix(new_basis_element);
                 const double new_energy =
                         augmented_ground_state_energy(new_basis_matrix);
@@ -117,7 +117,7 @@ namespace zsvm {
             double overlap_element, hamiltonian_element;
             context.compute_matrix_elements(
                     overlap_element, hamiltonian_element,
-                    basis_matrices[i], basis_matrices[j]);
+                    basis_matrices[i].data(), basis_matrices[j].data());
             solver.set_overlap_matrix_element(i, j, overlap_element);
             solver.set_hamiltonian_matrix_element(i, j, hamiltonian_element);
         }
@@ -157,9 +157,12 @@ int main() {
                 std::cout << optimizer.get_ground_state_energy() << std::endl;
             });
 
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
     std::cout << "Matrix element calls:       "
               << optimizer.context.get_matrix_element_calls() << std::endl;
     std::cout << "Matrix element time:        "
               << optimizer.context.get_matrix_element_time() << std::endl;
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+
     return 0;
 }

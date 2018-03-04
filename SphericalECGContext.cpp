@@ -11,35 +11,94 @@
 // Project-specific headers
 #include "Permutation.hpp" // for dznl::invariant_permutations et al.
 #include "JacobiCoordinates.hpp" // for jaco::pairwise_weights et al.
+#include "PackedLinearAlgebra.hpp" // for packed_determinant_inverse et al.
 
 
 zsvm::SphericalECGContext::SphericalECGContext(
-        std::size_t num_particles,
-        std::size_t num_pairs,
+        const std::vector<Particle> &particles,
         std::size_t num_permutations,
         int space_dimension,
-        double dimension_factor,
         const Eigen::MatrixXd &inverse_mass_matrix,
         const Eigen::MatrixXd &pairwise_weight_vectors,
-        const std::vector<Eigen::MatrixXd> &pairwise_weight_matrices,
-        const std::vector<double> &pairwise_charge_products,
-        const std::vector<double> &permutation_signs,
-        const std::vector<Eigen::MatrixXd> &permutation_matrices)
-        : num_pairs(num_pairs),
+        const std::vector<double> &permutation_sign_vector,
+        const std::vector<Eigen::MatrixXd> &permutation_matrix_vector)
+        : num_particles(particles.size()),
+          num_pairs(num_particles * (num_particles - 1) / 2),
           num_permutations(num_permutations),
+          matrix_size((num_particles - 1) * (num_particles - 1)),
           space_dimension(space_dimension),
-          dimension_factor(dimension_factor),
+          dimension_factor(std::tgamma(0.5 * (space_dimension - 1.0)) /
+                           std::tgamma(0.5 * space_dimension)),
           kinetic_factor((0.5 * space_dimension) / dimension_factor),
-          inverse_mass_matrix(inverse_mass_matrix),
-          pairwise_weight_vectors(pairwise_weight_vectors),
-          pairwise_weight_matrices(pairwise_weight_matrices),
-          pairwise_charge_products(pairwise_charge_products),
-          permutation_signs(permutation_signs),
-          permutation_matrices(permutation_matrices),
-          workspace(num_particles - 1, num_particles - 1),
-          workspace_inverse(num_particles - 1, num_particles - 1),
-          matrix_element_calls(0),
-          matrix_element_time(0) {}
+          inverse_masses(new double[num_particles - 1]),
+          weight_vectors(new double[num_pairs * (num_particles - 1)]),
+          weight_matrices(new double[num_pairs * num_pairs]),
+          charge_products(new double[num_pairs]),
+          permutation_signs(new double[num_permutations]),
+          permutation_matrices(new double[num_permutations * matrix_size]),
+          ax(new double[num_pairs]),
+          bx(new double[num_pairs]),
+          cx(new double[num_pairs]),
+          dx(new double[num_pairs])
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+        , matrix_element_calls(0), matrix_element_time(0)
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+{
+    auto inverse_mass_pointer = const_cast<double *>(inverse_masses);
+    for (std::size_t i = 0; i < num_particles - 1; ++i) {
+        inverse_mass_pointer[i] = inverse_mass_matrix(i, i);
+    }
+    auto weight_vector_pointer = const_cast<double *>(weight_vectors);
+    for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
+        for (std::size_t i = 0; i < num_particles - 1; ++i, ++k) {
+            weight_vector_pointer[k] = pairwise_weight_vectors(i, p);
+        }
+    }
+    auto weight_matrix_pointer = const_cast<double *>(weight_matrices);
+    for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
+        for (std::size_t i = 0; i < num_particles - 1; ++i) {
+            for (std::size_t j = 0; j <= i; ++j, ++k) {
+                weight_matrix_pointer[k] = pairwise_weight_vectors(i, p) *
+                                           pairwise_weight_vectors(j, p);
+            }
+        }
+    }
+    auto charge_product_pointer = const_cast<double *>(charge_products);
+    for (std::size_t i = 0, k = 0; i < num_particles - 1; ++i) {
+        for (std::size_t j = i + 1; j < num_particles; ++j, ++k) {
+            charge_product_pointer[k] = particles[i].charge *
+                                        particles[j].charge;
+        }
+    }
+    auto permutation_sign_pointer = const_cast<double *>(permutation_signs);
+    for (std::size_t p = 0; p < num_permutations; ++p) {
+        permutation_sign_pointer[p] = permutation_sign_vector[p];
+    }
+    auto permutation_matrix_pointer =
+            const_cast<double *>(permutation_matrices);
+    for (std::size_t p = 0, k = 0; p < num_permutations; ++p) {
+        for (std::size_t i = 0; i < num_particles - 1; ++i) {
+            for (std::size_t j = 0; j < num_particles - 1; ++j, ++k) {
+                permutation_matrix_pointer[k] =
+                        permutation_matrix_vector[p](j, i);
+            }
+        }
+    }
+}
+
+
+zsvm::SphericalECGContext::~SphericalECGContext() {
+    delete[] inverse_masses;
+    delete[] weight_vectors;
+    delete[] weight_matrices;
+    delete[] charge_products;
+    delete[] permutation_signs;
+    delete[] permutation_matrices;
+    delete[] ax;
+    delete[] bx;
+    delete[] cx;
+    delete[] dx;
+}
 
 
 zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
@@ -52,29 +111,11 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
     }
     std::vector<int> particle_types(num_particles);
     std::vector<double> masses(num_particles);
-    std::vector<double> charges(num_particles);
     std::vector<Spin> spins(num_particles);
     for (std::size_t i = 0; i < num_particles; ++i) {
         particle_types[i] = particles[i].type;
         masses[i] = particles[i].mass;
-        charges[i] = particles[i].charge;
         spins[i] = particles[i].spin;
-    }
-    const std::size_t num_pairs =
-            num_particles * (num_particles - 1) / 2;
-    const Eigen::MatrixXd pairwise_weight_vectors =
-            jaco::pairwise_weights(masses);
-    std::vector<Eigen::MatrixXd> pairwise_weight_matrices;
-    for (std::size_t k = 0; k < num_pairs; ++k) {
-        pairwise_weight_matrices.push_back(
-                pairwise_weight_vectors.col(k) *
-                pairwise_weight_vectors.col(k).transpose());
-    }
-    std::vector<double> pairwise_charge_products(num_pairs);
-    for (std::size_t i = 0, k = 0; i < num_particles - 1; ++i) {
-        for (std::size_t j = i + 1; j < num_particles; ++j, ++k) {
-            pairwise_charge_products[k] = charges[i] * charges[j];
-        }
     }
     const std::vector<std::vector<std::size_t>> allowed_permutations =
             dznl::invariant_permutations(particle_types);
@@ -83,36 +124,38 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
         const std::size_t signature =
                 dznl::count_changes(spins, permutation) / 2 +
                 dznl::count_inversions(permutation);
-        permutation_signs.push_back((signature % 2 == 0)
-                                    ? +1.0 : -1.0);
+        permutation_signs.push_back((signature % 2 == 0) ? +1.0 : -1.0);
     }
     return SphericalECGContext(
-            num_particles,
-            num_pairs,
+            particles,
             allowed_permutations.size(),
             space_dimension,
-            std::tgamma(0.5 * (space_dimension - 1.0)) /
-            std::tgamma(0.5 * space_dimension),
             jaco::reduced_inverse_mass_matrix(masses),
-            pairwise_weight_vectors,
-            pairwise_weight_matrices,
-            pairwise_charge_products,
+            jaco::pairwise_weights(masses),
             permutation_signs,
             jaco::permutation_matrices(masses, allowed_permutations));
 }
 
 
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+
 unsigned long long int zsvm::SphericalECGContext::get_matrix_element_calls() {
     return matrix_element_calls;
 }
 
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+
+
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 
 unsigned long long int zsvm::SphericalECGContext::get_matrix_element_time() {
     return matrix_element_time;
 }
 
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 
-Eigen::MatrixXd zsvm::SphericalECGContext::gaussian_parameter_matrix(
+
+std::vector<double> zsvm::SphericalECGContext::gaussian_parameter_matrix(
         const std::vector<double> &correlation_coefficients) const {
     if (correlation_coefficients.size() != num_pairs) {
         throw std::invalid_argument(
@@ -120,10 +163,11 @@ Eigen::MatrixXd zsvm::SphericalECGContext::gaussian_parameter_matrix(
                         "received vector with incorrect number of "
                         "correlation coefficients");
     }
-    Eigen::MatrixXd a =
-            correlation_coefficients[0] * pairwise_weight_matrices[0];
-    for (std::size_t k = 1; k < num_pairs; ++k) {
-        a += correlation_coefficients[k] * pairwise_weight_matrices[k];
+    std::vector<double> a(num_pairs, 0.0);
+    for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
+        for (std::size_t q = 0; q < num_pairs; ++q, ++k) {
+            a[q] += weight_matrices[k] * correlation_coefficients[p];
+        }
     }
     return a;
 }
@@ -131,63 +175,66 @@ Eigen::MatrixXd zsvm::SphericalECGContext::gaussian_parameter_matrix(
 
 void zsvm::SphericalECGContext::matrix_element_kernel(
         double &__restrict__ overlap_kernel,
-        double &__restrict__ hamiltonian_kernel,
-        const Eigen::MatrixXd &__restrict__ a,
-        const Eigen::MatrixXd &__restrict__ b) {
+        double &__restrict__ hamiltonian_kernel) {
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
     auto start = std::chrono::high_resolution_clock::now();
-    workspace = a + b;
-    workspace_inverse = workspace.inverse();
-    const double workspace_det = workspace.determinant();
-    switch (space_dimension) { // Avoid call to std::pow if possible.
-        case 1:
-            overlap_kernel = 1.0 / std::sqrt(workspace_det);
-            break;
-        case 2:
-            overlap_kernel = 1.0 / workspace_det;
-            break;
-        case 3:
-            overlap_kernel = 1.0 / (workspace_det * std::sqrt(workspace_det));
-            break;
-        case 4:
-            overlap_kernel = 1.0 / (workspace_det * workspace_det);
-            break;
-        default:
-            overlap_kernel = 1.0 / std::sqrt(std::pow(
-                    workspace_det, space_dimension));
-            break;
-    }
-    hamiltonian_kernel = kinetic_factor * (inverse_mass_matrix * a *
-                                           workspace_inverse * b).trace();
-    for (std::size_t k = 0; k < num_pairs; ++k) {
-        hamiltonian_kernel += pairwise_charge_products[k] / std::sqrt(
-                2.0 * pairwise_weight_vectors.col(k).dot(
-                        workspace_inverse * pairwise_weight_vectors.col(k)));
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+    for (std::size_t i = 0; i < num_pairs; ++i) { cx[i] = ax[i] + bx[i]; }
+    if (num_particles == 5) {
+        const double det = packed_determinant_inverse_4(cx, dx);
+        switch (space_dimension) { // Avoid call to std::pow if possible.
+            case 1:
+                overlap_kernel = 1.0 / std::sqrt(det);
+                break;
+            case 2:
+                overlap_kernel = 1.0 / det;
+                break;
+            case 3:
+                overlap_kernel = 1.0 / (det * std::sqrt(det));
+                break;
+            case 4:
+                overlap_kernel = 1.0 / (det * det);
+                break;
+            default:
+                overlap_kernel = 1.0 / std::sqrt(
+                        std::pow(det, space_dimension));
+                break;
+        }
+        hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_4(
+                ax, bx, dx, inverse_masses);
+        for (std::size_t k = 0; k < num_pairs; ++k) {
+            hamiltonian_kernel += charge_products[k] / std::sqrt(
+                    2.0 * packed_quadratic_form_4(dx, weight_vectors + 4 * k));
+        }
+    } else {
+        throw std::invalid_argument("NOT IMPLEMENTED");
     }
     hamiltonian_kernel *= dimension_factor * overlap_kernel;
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
     auto stop = std::chrono::high_resolution_clock::now();
     matrix_element_time += std::chrono::duration_cast<
             std::chrono::nanoseconds>(stop - start).count();
     ++matrix_element_calls;
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 }
 
 
 void zsvm::SphericalECGContext::compute_matrix_elements(
-        double &overlap_matrix_element, double &hamiltonian_matrix_element,
-        const Eigen::MatrixXd &a, const Eigen::MatrixXd &b) {
-    overlap_matrix_element = hamiltonian_matrix_element = 0.0;
+        double &__restrict__ overlap_element,
+        double &__restrict__ hamiltonian_element,
+        const double *a, const double *b) {
+    overlap_element = hamiltonian_element = 0.0;
     double overlap_kernel, hamiltonian_kernel;
     for (std::size_t i = 0; i < num_permutations; ++i) {
         for (std::size_t j = 0; j < num_permutations; ++j) {
-            const double sign = permutation_signs[i] *
-                                permutation_signs[j];
-            matrix_element_kernel(
-                    overlap_kernel, hamiltonian_kernel,
-                    permutation_matrices[i].transpose() *
-                    a * permutation_matrices[i],
-                    permutation_matrices[j].transpose() *
-                    b * permutation_matrices[j]);
-            overlap_matrix_element += sign * overlap_kernel;
-            hamiltonian_matrix_element += sign * hamiltonian_kernel;
+            const double sign = permutation_signs[i] * permutation_signs[j];
+            packed_permutation_conjugate_4(
+                    a, permutation_matrices + i * matrix_size, ax);
+            packed_permutation_conjugate_4(
+                    b, permutation_matrices + j * matrix_size, bx);
+            matrix_element_kernel(overlap_kernel, hamiltonian_kernel);
+            overlap_element += sign * overlap_kernel;
+            hamiltonian_element += sign * hamiltonian_kernel;
         }
     }
 }
