@@ -3,6 +3,8 @@ project(zsvm)
 
 set(CMAKE_CXX_STANDARD 17)
 
+add_definitions(-DEIGEN_NO_DEBUG=1)
+
 add_compile_options(
         -Wall -Wextra -pedantic -Werror -pedantic-errors
         -O3 -march=native -mtune=native)

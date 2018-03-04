@@ -17,8 +17,8 @@
     __VA_ARGS__; \
     ::std::chrono::high_resolution_clock::time_point __stop_time = \
             ::std::chrono::high_resolution_clock::now(); \
-    ::std::cout << "Time elapsed (microseconds): " \
-                << ::std::chrono::duration_cast<::std::chrono::microseconds>( \
+    ::std::cout << "Time elapsed (nanoseconds): " \
+                << ::std::chrono::duration_cast<::std::chrono::nanoseconds>( \
                            __stop_time - __start_time).count() << std::endl; \
 } while (0)
 
@@ -27,9 +27,10 @@ namespace zsvm {
 
     class SphericalECGVariationalOptimizer {
 
-    private: // =============================================== MEMBER VARIABLES
+    public: // ================================================ MEMBER VARIABLES
+        // TODO: public for debugging
 
-        const SphericalECGContext context;
+        SphericalECGContext context;
         RealVariationalSolver solver;
         std::vector<std::vector<double>> basis;
         std::vector<Eigen::MatrixXd> basis_matrices;
@@ -102,6 +103,8 @@ namespace zsvm {
             recompute_solver_matrices();
         }
 
+    public: // =================================================================
+
         void recompute_basis_matrices() {
             basis_matrices.clear();
             for (const auto &basis_element : basis) {
@@ -134,12 +137,14 @@ namespace zsvm {
 
 
 int main() {
-    const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};
-    const zsvm::Particle electron_down = {0, 1.0, -1.0, zsvm::Spin::DOWN};
+    const zsvm::Particle electron_up =
+            {0, 1.0, -1.0, zsvm::Spin::UP};
+    const zsvm::Particle electron_down =
+            {0, 1.0, -1.0, zsvm::Spin::DOWN};
 //    const zsvm::Particle positron_up = {1, 1.0, +1.0, zsvm::Spin::UP};
 //    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
-    const zsvm::Particle beryllium_nucleus = {
-            2, 16538.028978017737, +4.0, zsvm::Spin::UP};
+    const zsvm::Particle beryllium_nucleus =
+            {2, 16538.028978017737, +4.0, zsvm::Spin::UP};
     const std::vector<zsvm::Particle> particles = {
             electron_up, electron_down, electron_up, electron_down,
             beryllium_nucleus};
@@ -151,5 +156,10 @@ int main() {
                 optimizer.recompute_solver_matrices();
                 std::cout << optimizer.get_ground_state_energy() << std::endl;
             });
+
+    std::cout << "Matrix element calls:       "
+              << optimizer.context.get_matrix_element_calls() << std::endl;
+    std::cout << "Matrix element time:        "
+              << optimizer.context.get_matrix_element_time() << std::endl;
     return 0;
 }

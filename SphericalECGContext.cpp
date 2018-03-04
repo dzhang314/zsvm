@@ -14,6 +14,7 @@
 
 
 zsvm::SphericalECGContext::SphericalECGContext(
+        std::size_t num_particles,
         std::size_t num_pairs,
         std::size_t num_permutations,
         int space_dimension,
@@ -28,12 +29,17 @@ zsvm::SphericalECGContext::SphericalECGContext(
           num_permutations(num_permutations),
           space_dimension(space_dimension),
           dimension_factor(dimension_factor),
+          kinetic_factor((0.5 * space_dimension) / dimension_factor),
           inverse_mass_matrix(inverse_mass_matrix),
           pairwise_weight_vectors(pairwise_weight_vectors),
           pairwise_weight_matrices(pairwise_weight_matrices),
           pairwise_charge_products(pairwise_charge_products),
           permutation_signs(permutation_signs),
-          permutation_matrices(permutation_matrices) {}
+          permutation_matrices(permutation_matrices),
+          workspace(num_particles - 1, num_particles - 1),
+          workspace_inverse(num_particles - 1, num_particles - 1),
+          matrix_element_calls(0),
+          matrix_element_time(0) {}
 
 
 zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
@@ -81,6 +87,7 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
                                     ? +1.0 : -1.0);
     }
     return SphericalECGContext(
+            num_particles,
             num_pairs,
             allowed_permutations.size(),
             space_dimension,
@@ -92,6 +99,16 @@ zsvm::SphericalECGContext zsvm::SphericalECGContext::create(
             pairwise_charge_products,
             permutation_signs,
             jaco::permutation_matrices(masses, allowed_permutations));
+}
+
+
+unsigned long long int zsvm::SphericalECGContext::get_matrix_element_calls() {
+    return matrix_element_calls;
+}
+
+
+unsigned long long int zsvm::SphericalECGContext::get_matrix_element_time() {
+    return matrix_element_time;
 }
 
 
@@ -113,38 +130,62 @@ Eigen::MatrixXd zsvm::SphericalECGContext::gaussian_parameter_matrix(
 
 
 void zsvm::SphericalECGContext::matrix_element_kernel(
-        double &overlap_kernel, double &hamiltonian_kernel,
-        const Eigen::MatrixXd &a, const Eigen::MatrixXd &b) const {
-    const Eigen::MatrixXd c = a + b;
-    const Eigen::MatrixXd c_inv = c.inverse();
-    overlap_kernel = std::sqrt(
-            std::pow(c.determinant(), -space_dimension));
-    hamiltonian_kernel = (0.5 * space_dimension) / dimension_factor *
-                         (inverse_mass_matrix * a * c_inv * b).trace();
+        double &__restrict__ overlap_kernel,
+        double &__restrict__ hamiltonian_kernel,
+        const Eigen::MatrixXd &__restrict__ a,
+        const Eigen::MatrixXd &__restrict__ b) {
+    auto start = std::chrono::high_resolution_clock::now();
+    workspace = a + b;
+    workspace_inverse = workspace.inverse();
+    const double workspace_det = workspace.determinant();
+    switch (space_dimension) { // Avoid call to std::pow if possible.
+        case 1:
+            overlap_kernel = 1.0 / std::sqrt(workspace_det);
+            break;
+        case 2:
+            overlap_kernel = 1.0 / workspace_det;
+            break;
+        case 3:
+            overlap_kernel = 1.0 / (workspace_det * std::sqrt(workspace_det));
+            break;
+        case 4:
+            overlap_kernel = 1.0 / (workspace_det * workspace_det);
+            break;
+        default:
+            overlap_kernel = 1.0 / std::sqrt(std::pow(
+                    workspace_det, space_dimension));
+            break;
+    }
+    hamiltonian_kernel = kinetic_factor * (inverse_mass_matrix * a *
+                                           workspace_inverse * b).trace();
     for (std::size_t k = 0; k < num_pairs; ++k) {
         hamiltonian_kernel += pairwise_charge_products[k] / std::sqrt(
                 2.0 * pairwise_weight_vectors.col(k).dot(
-                        c_inv * pairwise_weight_vectors.col(k)));
+                        workspace_inverse * pairwise_weight_vectors.col(k)));
     }
     hamiltonian_kernel *= dimension_factor * overlap_kernel;
+    auto stop = std::chrono::high_resolution_clock::now();
+    matrix_element_time += std::chrono::duration_cast<
+            std::chrono::nanoseconds>(stop - start).count();
+    ++matrix_element_calls;
 }
 
 
 void zsvm::SphericalECGContext::compute_matrix_elements(
-        double &overlap_matrix_element,
-        double &hamiltonian_matrix_element,
-        const Eigen::MatrixXd &a, const Eigen::MatrixXd &b) const {
+        double &overlap_matrix_element, double &hamiltonian_matrix_element,
+        const Eigen::MatrixXd &a, const Eigen::MatrixXd &b) {
     overlap_matrix_element = hamiltonian_matrix_element = 0.0;
     double overlap_kernel, hamiltonian_kernel;
     for (std::size_t i = 0; i < num_permutations; ++i) {
         for (std::size_t j = 0; j < num_permutations; ++j) {
             const double sign = permutation_signs[i] *
                                 permutation_signs[j];
-            matrix_element_kernel(overlap_kernel, hamiltonian_kernel,
-                                  permutation_matrices[i].transpose() *
-                                  a * permutation_matrices[i],
-                                  permutation_matrices[j].transpose() *
-                                  b * permutation_matrices[j]);
+            matrix_element_kernel(
+                    overlap_kernel, hamiltonian_kernel,
+                    permutation_matrices[i].transpose() *
+                    a * permutation_matrices[i],
+                    permutation_matrices[j].transpose() *
+                    b * permutation_matrices[j]);
             overlap_matrix_element += sign * overlap_kernel;
             hamiltonian_matrix_element += sign * hamiltonian_kernel;
         }
@@ -169,7 +210,7 @@ std::mt19937_64 zsvm::SphericalECGContext::properly_seeded_random_engine() {
 std::vector<double>
 zsvm::SphericalECGContext::random_correlation_coefficients() const {
     static std::mt19937_64 random_engine = properly_seeded_random_engine();
-    static std::normal_distribution<double> correlation_distribution(0.0, 2.0);
+    static std::normal_distribution<double> correlation_distribution(0.0, 3.0);
     std::vector<double> result(num_pairs);
     for (std::size_t i = 0; i < num_pairs; ++i) {
         result[i] = std::exp(correlation_distribution(random_engine));
