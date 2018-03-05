@@ -30,11 +30,9 @@ namespace zsvm {
 
         void set_basis_size_destructive(std::size_t basis_size);
 
-        void set_overlap_matrix_element(std::size_t i, std::size_t j,
-                                        double elem);
+        double &overlap_matrix_element(std::size_t i, std::size_t j);
 
-        void set_hamiltonian_matrix_element(std::size_t i, std::size_t j,
-                                            double elem);
+        double &hamiltonian_matrix_element(std::size_t i, std::size_t j);
 
         void compute_eigenstates();
 

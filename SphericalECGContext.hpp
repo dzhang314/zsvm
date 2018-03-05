@@ -81,8 +81,9 @@ namespace zsvm {
 
     public: // =================================== MATRIX ELEMENT HELPER METHODS
 
-        std::vector<double> gaussian_parameter_matrix(
-                const std::vector<double> &correlation_coefficients) const;
+        void gaussian_parameter_matrix(
+                const double *__restrict__ correlation_coefficients,
+                double *__restrict__ result) const;
 
         void matrix_element_kernel(
                 double &__restrict__ overlap_kernel,
@@ -99,7 +100,7 @@ namespace zsvm {
 
         static std::mt19937_64 properly_seeded_random_engine();
 
-        std::vector<double> random_correlation_coefficients() const;
+        void random_correlation_coefficients(double *__restrict__ result) const;
 
     }; // class SphericalECGContext
 

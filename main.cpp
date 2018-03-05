@@ -1,8 +1,10 @@
 // C++ standard library headers
 #include <chrono>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <vector>
 
 // Project-specific headers
@@ -23,6 +25,11 @@
 } while (0)
 
 
+enum class SearchDirection {
+    ZERO, FORWARD, BACKWARD
+};
+
+
 namespace zsvm {
 
     class SphericalECGVariationalOptimizer {
@@ -30,6 +37,8 @@ namespace zsvm {
     public: // ================================================ MEMBER VARIABLES
         // TODO: public for debugging
 
+        const std::size_t num_particles;
+        const std::size_t num_pairs;
         SphericalECGContext context;
         RealVariationalSolver solver;
         std::vector<std::vector<double>> basis;
@@ -39,7 +48,9 @@ namespace zsvm {
 
         explicit SphericalECGVariationalOptimizer(
                 const std::vector<Particle> &particles, int space_dimension)
-                : context(SphericalECGContext::create(particles,
+                : num_particles(particles.size()),
+                  num_pairs(num_particles * (num_particles - 1) / 2),
+                  context(SphericalECGContext::create(particles,
                                                       space_dimension)) {}
 
     public: // =================================================================
@@ -51,47 +62,47 @@ namespace zsvm {
     public: // =================================================================
 
         double augmented_ground_state_energy(
-                const std::vector<double> &basis_matrix) {
+                const double *__restrict__ new_basis_matrix) {
             if (solver.empty()) {
                 double overlap_element, hamiltonian_element;
                 context.compute_matrix_elements(
                         overlap_element, hamiltonian_element,
-                        basis_matrix.data(), basis_matrix.data());
+                        new_basis_matrix, new_basis_matrix);
                 return hamiltonian_element / overlap_element;
             } else {
-                std::vector<double> new_overlap_column, new_hamiltonian_column;
-                for (std::size_t i = 0; i < basis_matrices.size(); ++i) {
-                    double overlap_element, hamiltonian_element;
+                const std::size_t basis_size = basis_matrices.size();
+                std::vector<double> new_overlap_column(basis_size + 1);
+                std::vector<double> new_hamiltonian_column(basis_size + 1);
+                for (std::size_t i = 0; i < basis_size; ++i) {
                     context.compute_matrix_elements(
-                            overlap_element, hamiltonian_element,
-                            basis_matrices[i].data(), basis_matrix.data());
-                    new_overlap_column.push_back(overlap_element);
-                    new_hamiltonian_column.push_back(hamiltonian_element);
+                            new_overlap_column[i], new_hamiltonian_column[i],
+                            basis_matrices[i].data(), new_basis_matrix);
                 }
-                double overlap_matrix_element, hamiltonian_matrix_element;
                 context.compute_matrix_elements(
-                        overlap_matrix_element, hamiltonian_matrix_element,
-                        basis_matrix.data(), basis_matrix.data());
-                new_overlap_column.push_back(overlap_matrix_element);
-                new_hamiltonian_column.push_back(hamiltonian_matrix_element);
+                        new_overlap_column[basis_size],
+                        new_hamiltonian_column[basis_size],
+                        new_basis_matrix, new_basis_matrix);
                 return solver.minimum_augmented_eigenvalue(
-                        &new_overlap_column[0], &new_hamiltonian_column[0]);
+                        new_overlap_column.data(),
+                        new_hamiltonian_column.data());
             }
         }
 
         void expand_stochastic(std::size_t num_trials) {
-            std::vector<double> best_basis_element;
-            std::vector<double> best_basis_matrix;
+            std::vector<double> new_basis_element(num_pairs);
+            std::vector<double> new_basis_matrix(num_pairs);
+            std::vector<double> best_basis_element(num_pairs);
+            std::vector<double> best_basis_matrix(num_pairs);
             double best_energy = solver.empty()
                                  ? std::numeric_limits<double>::max()
                                  : solver.get_eigenvalue(0);
             for (std::size_t trial = 0; trial < num_trials; ++trial) {
-                const std::vector<double> new_basis_element =
-                        context.random_correlation_coefficients();
-                const std::vector<double> new_basis_matrix =
-                        context.gaussian_parameter_matrix(new_basis_element);
+                context.random_correlation_coefficients(
+                        new_basis_element.data());
+                context.gaussian_parameter_matrix(
+                        new_basis_element.data(), new_basis_matrix.data());
                 const double new_energy =
-                        augmented_ground_state_energy(new_basis_matrix);
+                        augmented_ground_state_energy(new_basis_matrix.data());
                 if (new_energy < best_energy) {
                     best_basis_element = new_basis_element;
                     best_basis_matrix = new_basis_matrix;
@@ -103,30 +114,112 @@ namespace zsvm {
             recompute_solver_matrices();
         }
 
+        void expand_refine(std::size_t num_trials, std::size_t max_steps) {
+            std::vector<double> new_basis_element(num_pairs);
+            std::vector<double> best_basis_element(num_pairs);
+            double best_energy = solver.empty()
+                                 ? std::numeric_limits<double>::max()
+                                 : solver.get_eigenvalue(0);
+            for (std::size_t trial = 0; trial < num_trials; ++trial) {
+                context.random_correlation_coefficients(
+                        new_basis_element.data());
+                const double new_energy =
+                        refine(new_basis_element.data(), max_steps);
+                if (new_energy < best_energy) {
+                    std::cout << "Improved energy to "
+                              << new_energy << std::endl;
+                    best_basis_element = new_basis_element;
+                    best_energy = new_energy;
+                }
+            }
+            basis.push_back(best_basis_element);
+            std::vector<double> best_basis_matrix(num_pairs);
+            context.gaussian_parameter_matrix(
+                    best_basis_element.data(), best_basis_matrix.data());
+            basis_matrices.push_back(best_basis_matrix);
+            recompute_solver_matrices();
+        }
+
+    public: // =================================================================
+
+        double refine(double *__restrict__ basis_element,
+                      std::size_t max_steps) {
+            std::vector<double> basis_matrix(num_pairs);
+            std::vector<SearchDirection> search_directions(num_pairs);
+            context.gaussian_parameter_matrix(
+                    basis_element, basis_matrix.data());
+            double current_energy = augmented_ground_state_energy(
+                    basis_matrix.data());
+            double step_size = 0.5;
+            for (std::size_t step = 0; step < max_steps; ++step) {
+                for (std::size_t i = 0; i < num_pairs; ++i) {
+                    const double x = basis_element[i];
+                    const double dx = step_size * x;
+                    search_directions[i] = SearchDirection::ZERO;
+
+                    basis_element[i] = x + dx;
+                    context.gaussian_parameter_matrix(
+                            basis_element, basis_matrix.data());
+                    const double forward_energy =
+                            augmented_ground_state_energy(basis_matrix.data());
+                    if (forward_energy < current_energy) {
+                        current_energy = forward_energy;
+                        search_directions[i] = SearchDirection::FORWARD;
+                    }
+                    basis_element[i] = x - dx;
+                    context.gaussian_parameter_matrix(
+                            basis_element, basis_matrix.data());
+                    const double backward_energy =
+                            augmented_ground_state_energy(basis_matrix.data());
+                    if (backward_energy < current_energy) {
+                        current_energy = backward_energy;
+                        search_directions[i] = SearchDirection::BACKWARD;
+                    }
+                    switch (search_directions[i]) {
+                        case SearchDirection::ZERO:
+                            basis_element[i] = x;
+                            break;
+                        case SearchDirection::FORWARD:
+                            basis_element[i] = x + dx;
+                            break;
+                        case SearchDirection::BACKWARD:
+                            basis_element[i] = x - dx;
+                            break;
+                    }
+                }
+                bool done = true;
+                for (const auto &direction : search_directions) {
+                    if (direction != SearchDirection::ZERO) {
+                        done = false;
+                        break;
+                    }
+                }
+                if (done && (step_size *= 0.5) == 0.0) { break; }
+            }
+            return current_energy;
+        }
+
     public: // =================================================================
 
         void recompute_basis_matrices() {
             basis_matrices.clear();
             for (const auto &basis_element : basis) {
-                basis_matrices.push_back(
-                        context.gaussian_parameter_matrix(basis_element));
+                std::vector<double> basis_matrix(num_pairs);
+                context.gaussian_parameter_matrix(
+                        basis_element.data(), basis_matrix.data());
+                basis_matrices.push_back(basis_matrix);
             }
-        }
-
-        void recompute_solver_matrix_elements(std::size_t i, std::size_t j) {
-            double overlap_element, hamiltonian_element;
-            context.compute_matrix_elements(
-                    overlap_element, hamiltonian_element,
-                    basis_matrices[i].data(), basis_matrices[j].data());
-            solver.set_overlap_matrix_element(i, j, overlap_element);
-            solver.set_hamiltonian_matrix_element(i, j, hamiltonian_element);
         }
 
         void recompute_solver_matrices() {
             solver.set_basis_size_destructive(basis_matrices.size());
             for (std::size_t i = 0; i < basis_matrices.size(); ++i) {
                 for (std::size_t j = 0; j < basis_matrices.size(); ++j) {
-                    recompute_solver_matrix_elements(i, j);
+                    context.compute_matrix_elements(
+                            solver.overlap_matrix_element(i, j),
+                            solver.hamiltonian_matrix_element(i, j),
+                            basis_matrices[i].data(),
+                            basis_matrices[j].data());
                 }
             }
         }
@@ -137,6 +230,9 @@ namespace zsvm {
 
 
 int main() {
+    std::cout << std::scientific;
+    std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
+
     const zsvm::Particle electron_up =
             {0, 1.0, -1.0, zsvm::Spin::UP};
     const zsvm::Particle electron_down =
@@ -150,12 +246,27 @@ int main() {
             beryllium_nucleus};
     zsvm::SphericalECGVariationalOptimizer optimizer(particles, 3);
 
-    PRINT_EXECUTION_TIME(
-            for (std::size_t basis_size = 0; basis_size < 10; ++basis_size) {
-                optimizer.expand_stochastic(200);
+    for (std::size_t basis_size = 0; true; ++basis_size) {
+        PRINT_EXECUTION_TIME(
+                optimizer.expand_refine(100, 200);
                 optimizer.recompute_solver_matrices();
                 std::cout << optimizer.get_ground_state_energy() << std::endl;
-            });
+                std::ostringstream basis_output_file_name;
+                basis_output_file_name << "basis-";
+                basis_output_file_name << std::setw(8) << std::setfill('0');
+                basis_output_file_name << basis_size + 1 << ".tsv";
+                std::ofstream basis_output_file(basis_output_file_name.str());
+                basis_output_file << std::scientific;
+                basis_output_file << std::setprecision(
+                        std::numeric_limits<double>::max_digits10);
+                for (const auto &basis_element : optimizer.basis) {
+                    for (std::size_t i = 0; i < basis_element.size(); ++i) {
+                        if (i > 0) { basis_output_file << '\t'; }
+                        basis_output_file << basis_element[i];
+                    }
+                    basis_output_file << std::endl;
+                });
+    }
 
 #ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
     std::cout << "Matrix element calls:       "

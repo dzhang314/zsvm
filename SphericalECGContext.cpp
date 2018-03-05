@@ -41,7 +41,7 @@ zsvm::SphericalECGContext::SphericalECGContext(
           cx(new double[num_pairs]),
           dx(new double[num_pairs])
 #ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
-, matrix_element_calls(0), matrix_element_time(0)
+        , matrix_element_calls(0), matrix_element_time(0)
 #endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 {
     auto inverse_mass_pointer = const_cast<double *>(inverse_masses);
@@ -154,22 +154,15 @@ unsigned long long int zsvm::SphericalECGContext::get_matrix_element_time() {
 
 #endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 
-
-std::vector<double> zsvm::SphericalECGContext::gaussian_parameter_matrix(
-        const std::vector<double> &correlation_coefficients) const {
-    if (correlation_coefficients.size() != num_pairs) {
-        throw std::invalid_argument(
-                "SphericalECGContext::gaussian_parameter_matrix "
-                        "received vector with incorrect number of "
-                        "correlation coefficients");
-    }
-    std::vector<double> a(num_pairs, 0.0);
+void zsvm::SphericalECGContext::gaussian_parameter_matrix(
+        const double *__restrict__ correlation_coefficients,
+        double *__restrict__ result) const {
+    for (std::size_t p = 0; p < num_pairs; ++p) { result[p] = 0.0; }
     for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
         for (std::size_t q = 0; q < num_pairs; ++q, ++k) {
-            a[q] += weight_matrices[k] * correlation_coefficients[p];
+            result[q] += weight_matrices[k] * correlation_coefficients[p];
         }
     }
-    return a;
 }
 
 
@@ -372,13 +365,11 @@ std::mt19937_64 zsvm::SphericalECGContext::properly_seeded_random_engine() {
 }
 
 
-std::vector<double>
-zsvm::SphericalECGContext::random_correlation_coefficients() const {
+void zsvm::SphericalECGContext::random_correlation_coefficients(
+        double *__restrict__ result) const {
     static std::mt19937_64 random_engine = properly_seeded_random_engine();
     static std::normal_distribution<double> correlation_distribution(0.0, 3.0);
-    std::vector<double> result(num_pairs);
     for (std::size_t i = 0; i < num_pairs; ++i) {
         result[i] = std::exp(correlation_distribution(random_engine));
     }
-    return result;
 }

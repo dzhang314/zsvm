@@ -30,17 +30,17 @@ void zsvm::RealVariationalSolver::set_basis_size_destructive(
 }
 
 
-void zsvm::RealVariationalSolver::set_overlap_matrix_element(
-        std::size_t i, std::size_t j, double elem) {
-    overlap_matrix(i, j) = elem;
+double &zsvm::RealVariationalSolver::overlap_matrix_element(
+        std::size_t i, std::size_t j) {
     clean = false;
+    return overlap_matrix(i, j);
 }
 
 
-void zsvm::RealVariationalSolver::set_hamiltonian_matrix_element(
-        std::size_t i, std::size_t j, double elem) {
-    hamiltonian_matrix(i, j) = elem;
+double &zsvm::RealVariationalSolver::hamiltonian_matrix_element(
+        std::size_t i, std::size_t j) {
     clean = false;
+    return hamiltonian_matrix(i, j);
 }
 
 
