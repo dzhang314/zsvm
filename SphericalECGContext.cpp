@@ -41,7 +41,7 @@ zsvm::SphericalECGContext::SphericalECGContext(
           cx(new double[num_pairs]),
           dx(new double[num_pairs])
 #ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
-        , matrix_element_calls(0), matrix_element_time(0)
+, matrix_element_calls(0), matrix_element_time(0)
 #endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 {
     auto inverse_mass_pointer = const_cast<double *>(inverse_masses);
@@ -173,49 +173,113 @@ std::vector<double> zsvm::SphericalECGContext::gaussian_parameter_matrix(
 }
 
 
+static inline double half_inverse_pow(double x, int n) {
+    switch (n) {
+        case 0:
+            return 1.0;
+        case 1:
+            return 1.0 / std::sqrt(x);
+        case 2:
+            return 1.0 / x;
+        case 3:
+            return 1.0 / (x * std::sqrt(x));
+        case 4:
+            return 1.0 / (x * x);
+        default:
+            return 1.0 / std::sqrt(std::pow(x, n));
+    }
+}
+
+
 void zsvm::SphericalECGContext::matrix_element_kernel(
         double &__restrict__ overlap_kernel,
         double &__restrict__ hamiltonian_kernel) {
-#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
-    auto start = std::chrono::high_resolution_clock::now();
-#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
     for (std::size_t i = 0; i < num_pairs; ++i) { cx[i] = ax[i] + bx[i]; }
-    if (num_particles == 5) {
-        const double det = packed_determinant_inverse_4(cx, dx);
-        switch (space_dimension) { // Avoid call to std::pow if possible.
-            case 1:
-                overlap_kernel = 1.0 / std::sqrt(det);
-                break;
-            case 2:
-                overlap_kernel = 1.0 / det;
-                break;
-            case 3:
-                overlap_kernel = 1.0 / (det * std::sqrt(det));
-                break;
-            case 4:
-                overlap_kernel = 1.0 / (det * det);
-                break;
-            default:
-                overlap_kernel = 1.0 / std::sqrt(
-                        std::pow(det, space_dimension));
-                break;
-        }
-        hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_4(
-                ax, bx, dx, inverse_masses);
-        for (std::size_t k = 0; k < num_pairs; ++k) {
-            hamiltonian_kernel += charge_products[k] / std::sqrt(
-                    2.0 * packed_quadratic_form_4(dx, weight_vectors + 4 * k));
-        }
-    } else {
-        throw std::invalid_argument("NOT IMPLEMENTED");
+    switch (num_particles) {
+        case 2:
+            overlap_kernel = half_inverse_pow(
+                    packed_determinant_inverse_1(cx, dx), space_dimension);
+            hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_1(
+                    ax, bx, dx, inverse_masses);
+            for (std::size_t k = 0; k < num_pairs; ++k) {
+                hamiltonian_kernel += charge_products[k] / std::sqrt(
+                        2.0 * packed_quadratic_form_1(
+                                dx, weight_vectors + k));
+            }
+            break;
+        case 3:
+            overlap_kernel = half_inverse_pow(
+                    packed_determinant_inverse_2(cx, dx), space_dimension);
+            hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_2(
+                    ax, bx, dx, inverse_masses);
+            for (std::size_t k = 0; k < num_pairs; ++k) {
+                hamiltonian_kernel += charge_products[k] / std::sqrt(
+                        2.0 * packed_quadratic_form_2(
+                                dx, weight_vectors + 2 * k));
+            }
+            break;
+        case 4:
+            overlap_kernel = half_inverse_pow(
+                    packed_determinant_inverse_3(cx, dx), space_dimension);
+            hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_3(
+                    ax, bx, dx, inverse_masses);
+            for (std::size_t k = 0; k < num_pairs; ++k) {
+                hamiltonian_kernel += charge_products[k] / std::sqrt(
+                        2.0 * packed_quadratic_form_3(
+                                dx, weight_vectors + 3 * k));
+            }
+            break;
+        case 5:
+            overlap_kernel = half_inverse_pow(
+                    packed_determinant_inverse_4(cx, dx), space_dimension);
+            hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_4(
+                    ax, bx, dx, inverse_masses);
+            for (std::size_t k = 0; k < num_pairs; ++k) {
+                hamiltonian_kernel += charge_products[k] / std::sqrt(
+                        2.0 * packed_quadratic_form_4(
+                                dx, weight_vectors + 4 * k));
+            }
+            break;
+        case 6:
+            overlap_kernel = half_inverse_pow(
+                    packed_determinant_inverse_5(cx, dx), space_dimension);
+            hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_5(
+                    ax, bx, dx, inverse_masses);
+            for (std::size_t k = 0; k < num_pairs; ++k) {
+                hamiltonian_kernel += charge_products[k] / std::sqrt(
+                        2.0 * packed_quadratic_form_5(
+                                dx, weight_vectors + 5 * k));
+            }
+            break;
+        case 7:
+            overlap_kernel = half_inverse_pow(
+                    packed_determinant_inverse_6(cx, dx), space_dimension);
+            hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_6(
+                    ax, bx, dx, inverse_masses);
+            for (std::size_t k = 0; k < num_pairs; ++k) {
+                hamiltonian_kernel += charge_products[k] / std::sqrt(
+                        2.0 * packed_quadratic_form_6(
+                                dx, weight_vectors + 6 * k));
+            }
+            break;
+        case 8:
+            overlap_kernel = half_inverse_pow(
+                    packed_determinant_inverse_7(cx, dx), space_dimension);
+            hamiltonian_kernel = kinetic_factor * packed_kinetic_trace_7(
+                    ax, bx, dx, inverse_masses);
+            for (std::size_t k = 0; k < num_pairs; ++k) {
+                hamiltonian_kernel += charge_products[k] / std::sqrt(
+                        2.0 * packed_quadratic_form_7(
+                                dx, weight_vectors + 7 * k));
+            }
+            break;
+        default:
+            throw std::logic_error(
+                    "Evaluation of spherical ECG matrix elements is "
+                            "not yet implemented for systems containing "
+                            "more than eight particles");
     }
     hamiltonian_kernel *= dimension_factor * overlap_kernel;
-#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
-    auto stop = std::chrono::high_resolution_clock::now();
-    matrix_element_time += std::chrono::duration_cast<
-            std::chrono::nanoseconds>(stop - start).count();
-    ++matrix_element_calls;
-#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 }
 
 
@@ -223,20 +287,74 @@ void zsvm::SphericalECGContext::compute_matrix_elements(
         double &__restrict__ overlap_element,
         double &__restrict__ hamiltonian_element,
         const double *a, const double *b) {
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+    auto start = std::chrono::high_resolution_clock::now();
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
     overlap_element = hamiltonian_element = 0.0;
     double overlap_kernel, hamiltonian_kernel;
     for (std::size_t i = 0; i < num_permutations; ++i) {
         for (std::size_t j = 0; j < num_permutations; ++j) {
             const double sign = permutation_signs[i] * permutation_signs[j];
-            packed_permutation_conjugate_4(
-                    a, permutation_matrices + i * matrix_size, ax);
-            packed_permutation_conjugate_4(
-                    b, permutation_matrices + j * matrix_size, bx);
+            switch (num_particles) {
+                case 2:
+                    packed_permutation_conjugate_1(
+                            a, permutation_matrices + i * matrix_size, ax);
+                    packed_permutation_conjugate_1(
+                            b, permutation_matrices + j * matrix_size, bx);
+                    break;
+                case 3:
+                    packed_permutation_conjugate_2(
+                            a, permutation_matrices + i * matrix_size, ax);
+                    packed_permutation_conjugate_2(
+                            b, permutation_matrices + j * matrix_size, bx);
+                    break;
+                case 4:
+                    packed_permutation_conjugate_3(
+                            a, permutation_matrices + i * matrix_size, ax);
+                    packed_permutation_conjugate_3(
+                            b, permutation_matrices + j * matrix_size, bx);
+                    break;
+                case 5:
+                    packed_permutation_conjugate_4(
+                            a, permutation_matrices + i * matrix_size, ax);
+                    packed_permutation_conjugate_4(
+                            b, permutation_matrices + j * matrix_size, bx);
+                    break;
+                case 6:
+                    packed_permutation_conjugate_5(
+                            a, permutation_matrices + i * matrix_size, ax);
+                    packed_permutation_conjugate_5(
+                            b, permutation_matrices + j * matrix_size, bx);
+                    break;
+                case 7:
+                    packed_permutation_conjugate_6(
+                            a, permutation_matrices + i * matrix_size, ax);
+                    packed_permutation_conjugate_6(
+                            b, permutation_matrices + j * matrix_size, bx);
+                    break;
+                case 8:
+                    packed_permutation_conjugate_7(
+                            a, permutation_matrices + i * matrix_size, ax);
+                    packed_permutation_conjugate_7(
+                            b, permutation_matrices + j * matrix_size, bx);
+                    break;
+                default:
+                    throw std::logic_error(
+                            "Evaluation of spherical ECG matrix elements is "
+                                    "not yet implemented for systems containing "
+                                    "more than eight particles");
+            }
             matrix_element_kernel(overlap_kernel, hamiltonian_kernel);
             overlap_element += sign * overlap_kernel;
             hamiltonian_element += sign * hamiltonian_kernel;
         }
     }
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+    auto stop = std::chrono::high_resolution_clock::now();
+    matrix_element_time += std::chrono::duration_cast<
+            std::chrono::nanoseconds>(stop - start).count();
+    ++matrix_element_calls;
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 }
 
 
