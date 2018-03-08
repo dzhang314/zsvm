@@ -154,13 +154,15 @@ unsigned long long int zsvm::SphericalECGContext::get_matrix_element_time() {
 
 #endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 
+
 void zsvm::SphericalECGContext::gaussian_parameter_matrix(
         const double *__restrict__ correlation_coefficients,
         double *__restrict__ result) const {
     for (std::size_t p = 0; p < num_pairs; ++p) { result[p] = 0.0; }
     for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
+        const double c = std::exp(correlation_coefficients[p]);
         for (std::size_t q = 0; q < num_pairs; ++q, ++k) {
-            result[q] += weight_matrices[k] * correlation_coefficients[p];
+            result[q] += c * weight_matrices[k];
         }
     }
 }
@@ -370,6 +372,6 @@ void zsvm::SphericalECGContext::random_correlation_coefficients(
     static std::mt19937_64 random_engine = properly_seeded_random_engine();
     static std::normal_distribution<double> correlation_distribution(0.0, 3.0);
     for (std::size_t i = 0; i < num_pairs; ++i) {
-        result[i] = std::exp(correlation_distribution(random_engine));
+        result[i] = correlation_distribution(random_engine);
     }
 }

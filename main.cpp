@@ -150,14 +150,12 @@ namespace zsvm {
                     basis_element, basis_matrix.data());
             double current_energy = augmented_ground_state_energy(
                     basis_matrix.data());
-            double step_size = 0.5;
+            std::vector<double> step_sizes(num_pairs, 1.0);
             for (std::size_t step = 0; step < max_steps; ++step) {
                 for (std::size_t i = 0; i < num_pairs; ++i) {
                     const double x = basis_element[i];
-                    const double dx = step_size * x;
                     search_directions[i] = SearchDirection::ZERO;
-
-                    basis_element[i] = x + dx;
+                    basis_element[i] = x + step_size;
                     context.gaussian_parameter_matrix(
                             basis_element, basis_matrix.data());
                     const double forward_energy =
@@ -166,7 +164,7 @@ namespace zsvm {
                         current_energy = forward_energy;
                         search_directions[i] = SearchDirection::FORWARD;
                     }
-                    basis_element[i] = x - dx;
+                    basis_element[i] = x - step_size;
                     context.gaussian_parameter_matrix(
                             basis_element, basis_matrix.data());
                     const double backward_energy =
@@ -180,10 +178,10 @@ namespace zsvm {
                             basis_element[i] = x;
                             break;
                         case SearchDirection::FORWARD:
-                            basis_element[i] = x + dx;
+                            basis_element[i] = x + step_size;
                             break;
                         case SearchDirection::BACKWARD:
-                            basis_element[i] = x - dx;
+                            basis_element[i] = x - step_size;
                             break;
                     }
                 }
