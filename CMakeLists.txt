@@ -25,4 +25,10 @@ add_executable(zsvm
         SphericalECGContext.cpp
         RealVariationalSolver.hpp
         RealVariationalSolver.cpp
+        AmoebaOptimizer.hpp
+        AmoebaOptimizer.cpp
+        ScriptToken.hpp
+        ScriptToken.cpp
+        ScriptTokenizer.hpp
+        ScriptTokenizer.cpp
         main.cpp)

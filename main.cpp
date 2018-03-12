@@ -5,12 +5,15 @@
 #include <iostream>
 #include <limits>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 // Project-specific headers
 #include "Particle.hpp"
 #include "SphericalECGContext.hpp"
 #include "RealVariationalSolver.hpp"
+#include "AmoebaOptimizer.hpp"
+#include "ScriptTokenizer.hpp"
 
 
 #define PRINT_EXECUTION_TIME(...) do { \
@@ -23,11 +26,6 @@
                 << ::std::chrono::duration_cast<::std::chrono::nanoseconds>( \
                            __stop_time - __start_time).count() << std::endl; \
 } while (0)
-
-
-enum class SearchDirection {
-    ZERO, FORWARD, BACKWARD
-};
 
 
 namespace zsvm {
@@ -50,8 +48,8 @@ namespace zsvm {
                 const std::vector<Particle> &particles, int space_dimension)
                 : num_particles(particles.size()),
                   num_pairs(num_particles * (num_particles - 1) / 2),
-                  context(SphericalECGContext::create(particles,
-                                                      space_dimension)) {}
+                  context(SphericalECGContext::create(
+                          particles, space_dimension)) {}
 
     public: // =================================================================
 
@@ -88,7 +86,7 @@ namespace zsvm {
             }
         }
 
-        void expand_stochastic(std::size_t num_trials) {
+        void expand_random(std::size_t num_trials) {
             std::vector<double> new_basis_element(num_pairs);
             std::vector<double> new_basis_matrix(num_pairs);
             std::vector<double> best_basis_element(num_pairs);
@@ -114,7 +112,9 @@ namespace zsvm {
             recompute_solver_matrices();
         }
 
-        void expand_refine(std::size_t num_trials, std::size_t max_steps) {
+        void expand_amoeba(std::size_t num_trials,
+                           double initial_step_size,
+                           std::size_t max_steps) {
             std::vector<double> new_basis_element(num_pairs);
             std::vector<double> best_basis_element(num_pairs);
             double best_energy = solver.empty()
@@ -123,8 +123,8 @@ namespace zsvm {
             for (std::size_t trial = 0; trial < num_trials; ++trial) {
                 context.random_correlation_coefficients(
                         new_basis_element.data());
-                const double new_energy =
-                        refine(new_basis_element.data(), max_steps);
+                const double new_energy = refine_amoeba(
+                        new_basis_element.data(), initial_step_size, max_steps);
                 if (new_energy < best_energy) {
                     std::cout << "Improved energy to "
                               << new_energy << std::endl;
@@ -142,59 +142,22 @@ namespace zsvm {
 
     public: // =================================================================
 
-        double refine(double *__restrict__ basis_element,
-                      std::size_t max_steps) {
+        double refine_amoeba(double *__restrict__ basis_element,
+                             double initial_step_size,
+                             std::size_t max_steps) {
             std::vector<double> basis_matrix(num_pairs);
-            std::vector<SearchDirection> search_directions(num_pairs);
-            context.gaussian_parameter_matrix(
-                    basis_element, basis_matrix.data());
-            double current_energy = augmented_ground_state_energy(
-                    basis_matrix.data());
-            std::vector<double> step_sizes(num_pairs, 1.0);
+            dznl::AmoebaOptimizer amoeba(
+                    basis_element, num_pairs, initial_step_size,
+                    [&](const double *b) {
+                        context.gaussian_parameter_matrix(
+                                b, basis_matrix.data());
+                        return augmented_ground_state_energy(
+                                basis_matrix.data());
+                    });
             for (std::size_t step = 0; step < max_steps; ++step) {
-                for (std::size_t i = 0; i < num_pairs; ++i) {
-                    const double x = basis_element[i];
-                    search_directions[i] = SearchDirection::ZERO;
-                    basis_element[i] = x + step_size;
-                    context.gaussian_parameter_matrix(
-                            basis_element, basis_matrix.data());
-                    const double forward_energy =
-                            augmented_ground_state_energy(basis_matrix.data());
-                    if (forward_energy < current_energy) {
-                        current_energy = forward_energy;
-                        search_directions[i] = SearchDirection::FORWARD;
-                    }
-                    basis_element[i] = x - step_size;
-                    context.gaussian_parameter_matrix(
-                            basis_element, basis_matrix.data());
-                    const double backward_energy =
-                            augmented_ground_state_energy(basis_matrix.data());
-                    if (backward_energy < current_energy) {
-                        current_energy = backward_energy;
-                        search_directions[i] = SearchDirection::BACKWARD;
-                    }
-                    switch (search_directions[i]) {
-                        case SearchDirection::ZERO:
-                            basis_element[i] = x;
-                            break;
-                        case SearchDirection::FORWARD:
-                            basis_element[i] = x + step_size;
-                            break;
-                        case SearchDirection::BACKWARD:
-                            basis_element[i] = x - step_size;
-                            break;
-                    }
-                }
-                bool done = true;
-                for (const auto &direction : search_directions) {
-                    if (direction != SearchDirection::ZERO) {
-                        done = false;
-                        break;
-                    }
-                }
-                if (done && (step_size *= 0.5) == 0.0) { break; }
+                amoeba.step();
             }
-            return current_energy;
+            return amoeba.current_minimum(basis_element);
         }
 
     public: // =================================================================
@@ -231,47 +194,52 @@ int main() {
     std::cout << std::scientific;
     std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
 
-    const zsvm::Particle electron_up =
-            {0, 1.0, -1.0, zsvm::Spin::UP};
-    const zsvm::Particle electron_down =
-            {0, 1.0, -1.0, zsvm::Spin::DOWN};
-//    const zsvm::Particle positron_up = {1, 1.0, +1.0, zsvm::Spin::UP};
-//    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
-    const zsvm::Particle beryllium_nucleus =
-            {2, 16538.028978017737, +4.0, zsvm::Spin::UP};
-    const std::vector<zsvm::Particle> particles = {
-            electron_up, electron_down, electron_up, electron_down,
-            beryllium_nucleus};
-    zsvm::SphericalECGVariationalOptimizer optimizer(particles, 3);
-
-    for (std::size_t basis_size = 0; true; ++basis_size) {
-        PRINT_EXECUTION_TIME(
-                optimizer.expand_refine(100, 200);
-                optimizer.recompute_solver_matrices();
-                std::cout << optimizer.get_ground_state_energy() << std::endl;
-                std::ostringstream basis_output_file_name;
-                basis_output_file_name << "basis-";
-                basis_output_file_name << std::setw(8) << std::setfill('0');
-                basis_output_file_name << basis_size + 1 << ".tsv";
-                std::ofstream basis_output_file(basis_output_file_name.str());
-                basis_output_file << std::scientific;
-                basis_output_file << std::setprecision(
-                        std::numeric_limits<double>::max_digits10);
-                for (const auto &basis_element : optimizer.basis) {
-                    for (std::size_t i = 0; i < basis_element.size(); ++i) {
-                        if (i > 0) { basis_output_file << '\t'; }
-                        basis_output_file << basis_element[i];
-                    }
-                    basis_output_file << std::endl;
-                });
+    zsvm::ScriptTokenizer tokenizer("../example_script.zscr");
+    for (zsvm::ScriptToken token = tokenizer.get_next_token();
+         token.get_type() != zsvm::ScriptToken::Type::END_OF_FILE;
+         token = tokenizer.get_next_token()) {
+        std::cout << token << std::endl;
     }
 
-#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
-    std::cout << "Matrix element calls:       "
-              << optimizer.context.get_matrix_element_calls() << std::endl;
-    std::cout << "Matrix element time:        "
-              << optimizer.context.get_matrix_element_time() << std::endl;
-#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+//    const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};
+//    const zsvm::Particle electron_down = {0, 1.0, -1.0, zsvm::Spin::DOWN};
+////    const zsvm::Particle positron_up = {1, 1.0, +1.0, zsvm::Spin::UP};
+////    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
+//    const zsvm::Particle beryllium_nucleus =
+//            {2, 16538.028978017737, +4.0, zsvm::Spin::UP};
+//    const std::vector<zsvm::Particle> particles = {
+//            electron_up, electron_down, electron_up, electron_down,
+//            beryllium_nucleus};
+//    zsvm::SphericalECGVariationalOptimizer optimizer(particles, 3);
+//
+//    PRINT_EXECUTION_TIME(
+//            for (std::size_t basis_size = 0; basis_size < 100; ++basis_size) {
+//                optimizer.expand_amoeba(100, 0.5, 200);
+//                optimizer.recompute_solver_matrices();
+//                std::cout << optimizer.get_ground_state_energy() << std::endl;
+//                std::ostringstream basis_output_file_name;
+//                basis_output_file_name << "basis-";
+//                basis_output_file_name << std::setw(8) << std::setfill('0');
+//                basis_output_file_name << basis_size + 1 << ".tsv";
+//                std::ofstream basis_output_file(basis_output_file_name.str());
+//                basis_output_file << std::scientific;
+//                basis_output_file << std::setprecision(
+//                        std::numeric_limits<double>::max_digits10);
+//                for (const auto &basis_element : optimizer.basis) {
+//                    for (std::size_t i = 0; i < basis_element.size(); ++i) {
+//                        if (i > 0) { basis_output_file << '\t'; }
+//                        basis_output_file << basis_element[i];
+//                    }
+//                    basis_output_file << std::endl;
+//                }
+//            });
+//
+//#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+//    std::cout << "Matrix element calls:       "
+//              << optimizer.context.get_matrix_element_calls() << std::endl;
+//    std::cout << "Matrix element time:        "
+//              << optimizer.context.get_matrix_element_time() << std::endl;
+//#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 
     return 0;
 }

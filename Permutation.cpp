@@ -1,8 +1,7 @@
 #include "Permutation.hpp"
 
 // C++ standard library headers
-#include <algorithm> // for td::next_permutation
-#include <cstddef> // for std::size_t
+#include <algorithm> // for std::next_permutation
 #include <stdexcept> // for std::invalid_argument
 
 

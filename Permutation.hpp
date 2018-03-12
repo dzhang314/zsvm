@@ -2,6 +2,7 @@
 #define DZNL_PERMUTATION_HPP_INCLUDED
 
 // C++ standard library headers
+#include <cstddef> // for std::size_t
 #include <vector> // for std::vector
 
 // Project-specific headers

@@ -2,6 +2,7 @@
 #define ZSVM_JACOBI_COORDINATES_HPP_INCLUDED
 
 // C++ standard library headers
+#include <cstddef> // for std::size_t
 #include <vector> // for std::vector
 
 // Eigen linear algebra library headers
