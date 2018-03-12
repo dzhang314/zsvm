@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace zsvm {
 
@@ -40,6 +41,10 @@ namespace zsvm {
         explicit ScriptToken(Type token_type);
 
         explicit ScriptToken(const std::string &identifier);
+
+        explicit ScriptToken(long long int value);
+
+        explicit ScriptToken(double value);
 
     public: // ======================================================= ACCESSORS
 

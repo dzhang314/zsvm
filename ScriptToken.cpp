@@ -45,6 +45,20 @@ zsvm::ScriptToken::ScriptToken(const std::string &identifier)
           double_value(std::numeric_limits<double>::quiet_NaN()) {}
 
 
+zsvm::ScriptToken::ScriptToken(long long int value)
+        : type(Type::INTEGER),
+          string_value("<INTEGER>"),
+          integer_value(value),
+          double_value(std::numeric_limits<double>::quiet_NaN()) {}
+
+
+zsvm::ScriptToken::ScriptToken(double value)
+        : type(Type::DECIMAL),
+          string_value("<DECIMAL>"),
+          integer_value(std::numeric_limits<long long int>::min()),
+          double_value(value) {}
+
+
 zsvm::ScriptToken::Type zsvm::ScriptToken::get_type() const {
     return type;
 }

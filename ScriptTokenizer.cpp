@@ -1,6 +1,7 @@
 #include "ScriptTokenizer.hpp"
 
 // C++ standard library headers
+#include <cmath> // for std::pow
 #include <sstream> // for std::ostringstream
 #include <stdexcept> // for std::invalid_argument
 #include <vector> // for std::vector
@@ -64,7 +65,82 @@ zsvm::ScriptToken zsvm::ScriptTokenizer::get_next_token() {
         }
     }
     if (is_number_first_character(next_char)) {
-        throw std::invalid_argument("NOT IMPLEMENTED");
+        const int sign = (next_char == '-') ? -1 : +1;
+        long long int integer_value = std::isdigit(next_char)
+                                      ? next_char - '0' : 0;
+        while (std::isdigit(script_file.peek())) {
+            script_file.get(next_char);
+            integer_value = 10 * integer_value + (next_char - '0');
+        }
+        if (script_file.peek() == '.') {
+            script_file.get(next_char); // Consume period.
+            long long int fraction_value = 0, fraction_length = 0;
+            while (std::isdigit(script_file.peek())) {
+                script_file.get(next_char);
+                fraction_value = 10 * fraction_value + (next_char - '0');
+                ++fraction_length;
+            }
+            const double fraction = std::pow(10.0, -fraction_length)
+                                    * fraction_value;
+            const double decimal_value = integer_value + fraction;
+            if (script_file.peek() == 'e' || script_file.peek() == 'E') {
+                script_file.get(next_char); // Consume letter e.
+                script_file.get(next_char); // Read next character.
+                if (!is_number_first_character(next_char)) {
+                    std::ostringstream error_message;
+                    error_message << "Invalid character '" << next_char
+                                  << "' in exponent of numeric constant";
+                    throw std::invalid_argument(error_message.str());
+                }
+                const int exponent_sign = (next_char == '-') ? -1 : +1;
+                if (next_char == '+' || next_char == '-') {
+                    script_file.get(next_char);
+                }
+                if (!std::isdigit(next_char)) {
+                    throw std::invalid_argument(
+                            "Invalid exponent in numeric constant "
+                                    "(expected to see a digit)");
+                }
+                long long int exponent_value = next_char - '0';
+                while (std::isdigit(script_file.peek())) {
+                    script_file.get(next_char);
+                    exponent_value = 10 * exponent_value + (next_char - '0');
+                }
+                const double multiplier = std::pow(
+                        10.0, exponent_sign * exponent_value);
+                return ScriptToken(sign * decimal_value * multiplier);
+            } else {
+                return ScriptToken(sign * decimal_value);
+            }
+        } else if (script_file.peek() == 'e' || script_file.peek() == 'E') {
+            script_file.get(next_char); // Consume letter e.
+            script_file.get(next_char); // Read next character.
+            if (!is_number_first_character(next_char)) {
+                std::ostringstream error_message;
+                error_message << "Invalid character '" << next_char
+                              << "' in exponent of numeric constant";
+                throw std::invalid_argument(error_message.str());
+            }
+            const int exponent_sign = (next_char == '-') ? -1 : +1;
+            if (next_char == '+' || next_char == '-') {
+                script_file.get(next_char);
+            }
+            if (!std::isdigit(next_char)) {
+                throw std::invalid_argument(
+                        "Invalid exponent in numeric constant "
+                                "(expected to see a digit)");
+            }
+            long long int exponent_value = next_char - '0';
+            while (std::isdigit(script_file.peek())) {
+                script_file.get(next_char);
+                exponent_value = 10 * exponent_value + (next_char - '0');
+            }
+            const double multiplier = std::pow(
+                    10.0, exponent_sign * exponent_value);
+            return ScriptToken(sign * integer_value * multiplier);
+        } else {
+            return ScriptToken(sign * integer_value);
+        }
     }
     // At this point, we have exhausted all possible token types.
     std::ostringstream error_message;
