@@ -13,8 +13,7 @@
 #include "SphericalECGContext.hpp"
 #include "RealVariationalSolver.hpp"
 #include "AmoebaOptimizer.hpp"
-#include "ScriptTokenizer.hpp"
-
+#include "ScriptParser.hpp"
 
 #define PRINT_EXECUTION_TIME(...) do { \
     ::std::chrono::high_resolution_clock::time_point __start_time = \
@@ -194,11 +193,14 @@ int main() {
     std::cout << std::scientific;
     std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
 
-    zsvm::ScriptTokenizer tokenizer("../example_script.zscr");
-    for (zsvm::ScriptToken token = tokenizer.get_next_token();
-         token.get_type() != zsvm::ScriptToken::Type::END_OF_FILE;
-         token = tokenizer.get_next_token()) {
-        std::cout << token << std::endl;
+    zsvm::ScriptParser parser("../example_script.zscr");
+    while (true) {
+        zsvm::ScriptCommand command = parser.get_next_command();
+        if (command.empty()) {
+            break;
+        } else {
+            std::cout << command << std::endl;
+        }
     }
 
 //    const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};

@@ -27,6 +27,9 @@ bool zsvm::ScriptTokenizer::is_number_first_character(int c) {
 
 
 zsvm::ScriptToken zsvm::ScriptTokenizer::get_next_token() {
+    /* TODO: Split off sections of this method into separate methods for
+     * parsing identifiers, puctuation symbols, and numbers. Remove code
+     * duplication in number parsing, particularly exponent handling. */
     char next_char;
     if (!script_file.get(next_char)) {
         return ScriptToken(ScriptToken::Type::END_OF_FILE);
@@ -45,8 +48,8 @@ zsvm::ScriptToken zsvm::ScriptTokenizer::get_next_token() {
     }
     // At this point, we have eliminated whitespace and comments,
     // and we expect to see the first character of a token.
-    auto punct_iter = ScriptToken::PUNCTUATION_TOKENS.find(next_char);
-    if (punct_iter != ScriptToken::PUNCTUATION_TOKENS.end()) {
+    auto punct_iter = ScriptToken::PUNCTUATION_TO_TOKEN_MAP.find(next_char);
+    if (punct_iter != ScriptToken::PUNCTUATION_TO_TOKEN_MAP.end()) {
         return ScriptToken(punct_iter->second);
     }
     if (is_identifier_first_character(next_char)) {
@@ -57,8 +60,8 @@ zsvm::ScriptToken zsvm::ScriptTokenizer::get_next_token() {
             chars.push_back(next_char);
         }
         std::string identifier(chars.begin(), chars.end());
-        auto kw_iter = ScriptToken::KEYWORD_TOKENS.find(identifier);
-        if (kw_iter == ScriptToken::KEYWORD_TOKENS.end()) {
+        auto kw_iter = ScriptToken::KEYWORD_TO_TOKEN_MAP.find(identifier);
+        if (kw_iter == ScriptToken::KEYWORD_TO_TOKEN_MAP.end()) {
             return ScriptToken(identifier);
         } else {
             return ScriptToken(kw_iter->second);

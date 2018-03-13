@@ -4,6 +4,7 @@
 // C++ standard library headers
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -25,9 +26,11 @@ namespace zsvm {
             END_OF_FILE
         }; // enum class Type
 
-        static const std::map<char, Type> PUNCTUATION_TOKENS;
+        static const std::map<char, Type> PUNCTUATION_TO_TOKEN_MAP;
 
-        static const std::map<std::string, Type> KEYWORD_TOKENS;
+        static const std::map<std::string, Type> KEYWORD_TO_TOKEN_MAP;
+
+        static const std::set<Type> PUNCTUATION_TOKENS;
 
     private: // =============================================== MEMBER VARIABLES
 

@@ -31,4 +31,8 @@ add_executable(zsvm
         ScriptToken.cpp
         ScriptTokenizer.hpp
         ScriptTokenizer.cpp
+        ScriptCommand.hpp
+        ScriptCommand.cpp
+        ScriptParser.hpp
+        ScriptParser.cpp
         main.cpp)

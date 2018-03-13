@@ -2,7 +2,7 @@
 
 
 const std::map<char, zsvm::ScriptToken::Type>
-        zsvm::ScriptToken::PUNCTUATION_TOKENS = {
+        zsvm::ScriptToken::PUNCTUATION_TO_TOKEN_MAP = {
         {'(', Type::LEFT_PAREN},
         {')', Type::RIGHT_PAREN},
         {'=', Type::EQUALS},
@@ -12,7 +12,7 @@ const std::map<char, zsvm::ScriptToken::Type>
 
 
 const std::map<std::string, zsvm::ScriptToken::Type>
-        zsvm::ScriptToken::KEYWORD_TOKENS = {
+        zsvm::ScriptToken::KEYWORD_TO_TOKEN_MAP = {
         {"add",                 Type::ADD},
         {"particle",            Type::PARTICLE},
         {"declare",             Type::DECLARE},
@@ -28,6 +28,15 @@ const std::map<std::string, zsvm::ScriptToken::Type>
         {"basis_output_file",   Type::BASIS_OUTPUT_FILE},
         {"energy_output_file",  Type::ENERGY_OUTPUT_FILE},
         {"summary_output_file", Type::SUMMARY_OUTPUT_FILE},
+};
+
+
+const std::set<zsvm::ScriptToken::Type> zsvm::ScriptToken::PUNCTUATION_TOKENS = {
+        Type::LEFT_PAREN,
+        Type::RIGHT_PAREN,
+        Type::EQUALS,
+        Type::COMMA,
+        Type::SEMICOLON,
 };
 
 
