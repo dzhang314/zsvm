@@ -21,10 +21,12 @@ const std::map<std::string, zsvm::ScriptToken::Type>
         {"confining_potential", Type::CONFINING_POTENTIAL},
         {"pairwise_potential",  Type::PAIRWISE_POTENTIAL},
         {"expand",              Type::EXPAND},
-        {"amoeba",              Type::AMOEBA},
-        {"random",              Type::RANDOM},
+        {"refine",              Type::REFINE},
+        {"clear",               Type::CLEAR},
+        {"basis",               Type::BASIS},
         {"set",                 Type::SET},
         {"space_dimension",     Type::SPACE_DIMENSION},
+        {"basis_input_file",    Type::BASIS_INPUT_FILE},
         {"basis_output_file",   Type::BASIS_OUTPUT_FILE},
         {"energy_output_file",  Type::ENERGY_OUTPUT_FILE},
         {"summary_output_file", Type::SUMMARY_OUTPUT_FILE},
@@ -71,7 +73,7 @@ zsvm::ScriptToken::ScriptToken(
           type(Type::INTEGER),
           string_value(repr),
           integer_value(value),
-          double_value(std::numeric_limits<double>::quiet_NaN()) {}
+          double_value(value) {}
 
 
 zsvm::ScriptToken::ScriptToken(
@@ -135,17 +137,23 @@ std::ostream &operator<<(std::ostream &os, const zsvm::ScriptToken &token) {
         case zsvm::ScriptToken::Type::EXPAND:
             os << "<EXPAND>";
             break;
-        case zsvm::ScriptToken::Type::AMOEBA:
-            os << "<AMOEBA>";
+        case zsvm::ScriptToken::Type::REFINE:
+            os << "<REFINE>";
             break;
-        case zsvm::ScriptToken::Type::RANDOM:
-            os << "<RANDOM>";
+        case zsvm::ScriptToken::Type::CLEAR:
+            os << "<CLEAR>";
+            break;
+        case zsvm::ScriptToken::Type::BASIS:
+            os << "<BASIS>";
             break;
         case zsvm::ScriptToken::Type::SET:
             os << "<SET>";
             break;
         case zsvm::ScriptToken::Type::SPACE_DIMENSION:
             os << "<SPACE_DIMENSION>";
+            break;
+        case zsvm::ScriptToken::Type::BASIS_INPUT_FILE:
+            os << "<BASIS_INPUT_FILE>";
             break;
         case zsvm::ScriptToken::Type::BASIS_OUTPUT_FILE:
             os << "<BASIS_OUTPUT_FILE>";

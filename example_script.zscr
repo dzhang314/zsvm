@@ -1,29 +1,29 @@
-# A ZSVM input file is a script consisting of semicolon-terminated commands.
-
 set space_dimension 3;
-
-# declare particle_type <name> (...)
-# Possible keyword arguments:
-#     statistics = (distinguishable | fermion | boson)
-#     spin = (0.5)
 
 declare particle_type electron (statistics = fermion, spin = 0.5);
 declare particle_type positron (statistics = fermion, spin = 0.5);
-
-################################################################################
 
 declare dispersion_relation kinetic (
     interaction = radial_power_law, carrier = mass,
     exponent = 2, strength = 0.5);
 
-declare confining_potential central_potential (
-    interaction = radial_power_law, exponent = 2, strength = 1.0);
-declare pairwise_potential electrostatic_potential (
-    interaction = radial_power_law, exponent = -1, strength = 1.0);
+declare confining_potential harmonic_oscillator (
+    interaction = radial_power_law, carrier = external_charge,
+    exponent = 2, strength = 1.0);
+declare pairwise_potential coulomb_interaction (
+    interaction = radial_power_law, carrier = charge,
+    exponent = -1, strength = 1.0);
 
-add particle (mass = 1.0, charge = -1.0, type = electron, spin = +0.5);
-add particle (mass = 1.0, charge = -1.0, type = electron, spin = -0.5);
-add particle (mass = 1.0, charge = +1.0, type = positron, spin = +0.5);
-add particle (mass = 1.0, charge = +1.0, type = positron, spin = -0.5);
+add particle (type = electron, spin = +0.5,
+    mass = 1.0, charge = -1.0, external_charge = +1.0);
+add particle (type = electron, spin = -0.5,
+    mass = 1.0, charge = -1.0, external_charge = +1.0);
+add particle (type = positron, spin = +0.5,
+    mass = 1.0, charge = -1.0, external_charge = +1.0);
+add particle (type = positron, spin = -0.5,
+    mass = 1.0, charge = -1.0, external_charge = +1.0);
 
-expand amoeba 100;
+expand basis (method = amoeba, target_size = 100,
+    trials = 100, max_iterations = 200);
+refine basis (method = amoeba, cycles = 10,
+    trials = 10, max_iterations = 200);

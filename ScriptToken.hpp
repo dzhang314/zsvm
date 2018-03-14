@@ -19,8 +19,9 @@ namespace zsvm {
             ADD, PARTICLE,
             DECLARE, PARTICLE_TYPE, DISPERSION_RELATION,
             CONFINING_POTENTIAL, PAIRWISE_POTENTIAL,
-            EXPAND, AMOEBA, RANDOM,
-            SET, SPACE_DIMENSION, BASIS_OUTPUT_FILE,
+            EXPAND, REFINE, CLEAR, BASIS,
+            SET, SPACE_DIMENSION,
+            BASIS_INPUT_FILE, BASIS_OUTPUT_FILE,
             ENERGY_OUTPUT_FILE, SUMMARY_OUTPUT_FILE,
             END_OF_FILE
         }; // enum class Type

@@ -2,7 +2,7 @@
 
 
 double packed_determinant_inverse_1(
-        const double *__restrict__ x, double *__restrict__ y) {
+        const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det = x[0];
     y[0] = 1 / det;
     return det;
@@ -11,26 +11,26 @@ double packed_determinant_inverse_1(
 
 double packed_kinetic_trace_1(
         const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) {
+        const double *__restrict__ c, const double *__restrict__ m) noexcept {
     return a[0] * b[0] * c[0] * m[0];
 }
 
 
 double packed_quadratic_form_1(
-        const double *__restrict__ x, const double *__restrict__ v) {
+        const double *__restrict__ x, const double *__restrict__ v) noexcept {
     return v[0] * v[0] * x[0];
 }
 
 
 void packed_permutation_conjugate_1(
         const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) {
+        double *__restrict__ y) noexcept {
     y[0] = p[0] * p[0] * x[0];
 }
 
 
 double packed_determinant_inverse_2(
-        const double *__restrict__ x, double *__restrict__ y) {
+        const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det =
             -x[1] * x[1]
             + x[0] * x[2];
@@ -43,7 +43,7 @@ double packed_determinant_inverse_2(
 
 double packed_kinetic_trace_2(
         const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) {
+        const double *__restrict__ c, const double *__restrict__ m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -56,7 +56,7 @@ double packed_kinetic_trace_2(
 
 
 double packed_quadratic_form_2(
-        const double *__restrict__ x, const double *__restrict__ v) {
+        const double *__restrict__ x, const double *__restrict__ v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2];
@@ -65,7 +65,7 @@ double packed_quadratic_form_2(
 
 void packed_permutation_conjugate_2(
         const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) {
+        double *__restrict__ y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2];
@@ -80,7 +80,7 @@ void packed_permutation_conjugate_2(
 
 
 double packed_determinant_inverse_3(
-        const double *__restrict__ x, double *__restrict__ y) {
+        const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det =
             -x[2] * x[3] * x[3]
             + 2 * x[1] * x[3] * x[4]
@@ -105,7 +105,7 @@ double packed_determinant_inverse_3(
 
 double packed_kinetic_trace_3(
         const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) {
+        const double *__restrict__ c, const double *__restrict__ m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -137,7 +137,7 @@ double packed_kinetic_trace_3(
 
 
 double packed_quadratic_form_3(
-        const double *__restrict__ x, const double *__restrict__ v) {
+        const double *__restrict__ x, const double *__restrict__ v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -149,7 +149,7 @@ double packed_quadratic_form_3(
 
 void packed_permutation_conjugate_3(
         const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) {
+        double *__restrict__ y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]
@@ -199,7 +199,7 @@ void packed_permutation_conjugate_3(
 
 
 double packed_determinant_inverse_4(
-        const double *__restrict__ x, double *__restrict__ y) {
+        const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det =
             x[4] * x[4] * x[6] * x[6]
             - x[2] * x[5] * x[6] * x[6]
@@ -280,7 +280,7 @@ double packed_determinant_inverse_4(
 
 double packed_kinetic_trace_4(
         const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) {
+        const double *__restrict__ c, const double *__restrict__ m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -349,7 +349,7 @@ double packed_kinetic_trace_4(
 
 
 double packed_quadratic_form_4(
-        const double *__restrict__ x, const double *__restrict__ v) {
+        const double *__restrict__ x, const double *__restrict__ v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -365,7 +365,7 @@ double packed_quadratic_form_4(
 
 void packed_permutation_conjugate_4(
         const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) {
+        double *__restrict__ y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]
@@ -506,7 +506,7 @@ void packed_permutation_conjugate_4(
 
 
 double packed_determinant_inverse_5(
-        const double *__restrict__ x, double *__restrict__ y) {
+        const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det =
             x[5] * x[7] * x[7] * x[10] * x[10]
             - 2 * x[4] * x[7] * x[8] * x[10] * x[10]
@@ -902,7 +902,7 @@ double packed_determinant_inverse_5(
 
 double packed_kinetic_trace_5(
         const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) {
+        const double *__restrict__ c, const double *__restrict__ m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -1032,7 +1032,7 @@ double packed_kinetic_trace_5(
 
 
 double packed_quadratic_form_5(
-        const double *__restrict__ x, const double *__restrict__ v) {
+        const double *__restrict__ x, const double *__restrict__ v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -1053,7 +1053,7 @@ double packed_quadratic_form_5(
 
 void packed_permutation_conjugate_5(
         const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) {
+        double *__restrict__ y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]
@@ -1383,7 +1383,7 @@ void packed_permutation_conjugate_5(
 
 
 double packed_determinant_inverse_6(
-        const double *__restrict__ x, double *__restrict__ y) {
+        const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det =
             -x[8] * x[8] * x[11] * x[11] * x[15] * x[15]
             + x[5] * x[9] * x[11] * x[11] * x[15] * x[15]
@@ -3852,7 +3852,7 @@ double packed_determinant_inverse_6(
 
 double packed_kinetic_trace_6(
         const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) {
+        const double *__restrict__ c, const double *__restrict__ m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -4073,7 +4073,7 @@ double packed_kinetic_trace_6(
 
 
 double packed_quadratic_form_6(
-        const double *__restrict__ x, const double *__restrict__ v) {
+        const double *__restrict__ x, const double *__restrict__ v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -4100,7 +4100,7 @@ double packed_quadratic_form_6(
 
 void packed_permutation_conjugate_6(
         const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) {
+        double *__restrict__ y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]
@@ -4771,7 +4771,7 @@ void packed_permutation_conjugate_6(
 
 
 double packed_determinant_inverse_7(
-        const double *__restrict__ x, double *__restrict__ y) {
+        const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det =
             -x[9] * x[12] * x[12] * x[16] * x[16] * x[21] * x[21]
             + 2 * x[8] * x[12] * x[13] * x[16] * x[16] * x[21] * x[21]
@@ -22934,7 +22934,7 @@ double packed_determinant_inverse_7(
 
 double packed_kinetic_trace_7(
         const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) {
+        const double *__restrict__ c, const double *__restrict__ m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -23282,7 +23282,7 @@ double packed_kinetic_trace_7(
 
 
 double packed_quadratic_form_7(
-        const double *__restrict__ x, const double *__restrict__ v) {
+        const double *__restrict__ x, const double *__restrict__ v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -23316,7 +23316,7 @@ double packed_quadratic_form_7(
 
 void packed_permutation_conjugate_7(
         const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) {
+        double *__restrict__ y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]
