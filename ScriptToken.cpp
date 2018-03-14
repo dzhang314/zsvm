@@ -31,7 +31,8 @@ const std::map<std::string, zsvm::ScriptToken::Type>
 };
 
 
-const std::set<zsvm::ScriptToken::Type> zsvm::ScriptToken::PUNCTUATION_TOKENS = {
+const std::set<zsvm::ScriptToken::Type>
+        zsvm::ScriptToken::PUNCTUATION_TOKENS = {
         Type::LEFT_PAREN,
         Type::RIGHT_PAREN,
         Type::EQUALS,
@@ -40,64 +41,60 @@ const std::set<zsvm::ScriptToken::Type> zsvm::ScriptToken::PUNCTUATION_TOKENS = 
 };
 
 
-zsvm::ScriptToken::ScriptToken(Type token_type)
-        : type(token_type),
+zsvm::ScriptToken::ScriptToken(
+        std::size_t line_number, std::size_t column_number,
+        Type token_type)
+        : line_number(line_number),
+          column_number(column_number),
+          type(token_type),
           string_value(),
           integer_value(std::numeric_limits<long long int>::min()),
           double_value(std::numeric_limits<double>::quiet_NaN()) {}
 
 
-zsvm::ScriptToken::ScriptToken(const std::string &identifier)
-        : type(Type::IDENTIFIER),
+zsvm::ScriptToken::ScriptToken(
+        std::size_t line_number, std::size_t column_number,
+        const std::string &identifier)
+        : line_number(line_number),
+          column_number(column_number),
+          type(Type::IDENTIFIER),
           string_value(identifier),
           integer_value(std::numeric_limits<long long int>::min()),
           double_value(std::numeric_limits<double>::quiet_NaN()) {}
 
 
-zsvm::ScriptToken::ScriptToken(long long int value)
-        : type(Type::INTEGER),
-          string_value("<INTEGER>"),
+zsvm::ScriptToken::ScriptToken(
+        std::size_t line_number, std::size_t column_number,
+        long long int value, const std::string &repr)
+        : line_number(line_number),
+          column_number(column_number),
+          type(Type::INTEGER),
+          string_value(repr),
           integer_value(value),
           double_value(std::numeric_limits<double>::quiet_NaN()) {}
 
 
-zsvm::ScriptToken::ScriptToken(double value)
-        : type(Type::DECIMAL),
-          string_value("<DECIMAL>"),
+zsvm::ScriptToken::ScriptToken(
+        std::size_t line_number, std::size_t column_number,
+        double value, const std::string &repr)
+        : line_number(line_number),
+          column_number(column_number),
+          type(Type::DECIMAL),
+          string_value(repr),
           integer_value(std::numeric_limits<long long int>::min()),
           double_value(value) {}
 
 
-zsvm::ScriptToken::Type zsvm::ScriptToken::get_type() const {
-    return type;
-}
-
-
-std::string zsvm::ScriptToken::get_string_value() const {
-    return string_value;
-}
-
-
-long long int zsvm::ScriptToken::get_integer_value() const {
-    return integer_value;
-}
-
-
-double zsvm::ScriptToken::get_double_value() const {
-    return double_value;
-}
-
-
 std::ostream &operator<<(std::ostream &os, const zsvm::ScriptToken &token) {
-    switch (token.get_type()) {
+    switch (token.type) {
         case zsvm::ScriptToken::Type::IDENTIFIER:
-            os << "<IDENTIFIER, " << token.get_string_value() << ">";
+            os << "<IDENTIFIER, " << token.string_value << ">";
             break;
         case zsvm::ScriptToken::Type::INTEGER:
-            os << "<INTEGER, " << token.get_integer_value() << ">";
+            os << "<INTEGER, " << token.integer_value << ">";
             break;
         case zsvm::ScriptToken::Type::DECIMAL:
-            os << "<DECIMAL, " << token.get_double_value() << ">";
+            os << "<DECIMAL, " << token.double_value << ">";
             break;
         case zsvm::ScriptToken::Type::LEFT_PAREN:
             os << "<LEFT_PAREN>";
@@ -163,5 +160,6 @@ std::ostream &operator<<(std::ostream &os, const zsvm::ScriptToken &token) {
             os << "<END_OF_FILE>";
             break;
     }
+    os << '(' << token.line_number << ", " << token.column_number << ')';
     return os;
 }

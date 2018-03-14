@@ -2,15 +2,14 @@
 #define ZSVM_SCRIPT_TOKEN_HPP_INCLUDED
 
 // C++ standard library headers
-#include <iostream>
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
+#include <iostream> // for std::ostream
+#include <map> // for std::map
+#include <set> // for std::set
+#include <string> // for std::string
 
 namespace zsvm {
 
-    class ScriptToken {
+    struct ScriptToken {
 
     public: // =============================================== TOKEN ENUMERATION
 
@@ -32,32 +31,32 @@ namespace zsvm {
 
         static const std::set<Type> PUNCTUATION_TOKENS;
 
-    private: // =============================================== MEMBER VARIABLES
+    public: // ================================================ MEMBER VARIABLES
 
-        Type type;
-        std::string string_value;
-        long long int integer_value;
-        double double_value;
+        const std::size_t line_number;
+        const std::size_t column_number;
+        const Type type;
+        const std::string string_value;
+        const long long int integer_value;
+        const double double_value;
 
     public: // ===================================================== CONSTRUCTOR
 
-        explicit ScriptToken(Type token_type);
+        explicit ScriptToken(
+                std::size_t line_number, std::size_t column_number,
+                Type token_type);
 
-        explicit ScriptToken(const std::string &identifier);
+        explicit ScriptToken(
+                std::size_t line_number, std::size_t column_number,
+                const std::string &identifier);
 
-        explicit ScriptToken(long long int value);
+        explicit ScriptToken(
+                std::size_t line_number, std::size_t column_number,
+                long long int value, const std::string &repr);
 
-        explicit ScriptToken(double value);
-
-    public: // ======================================================= ACCESSORS
-
-        Type get_type() const;
-
-        std::string get_string_value() const;
-
-        long long int get_integer_value() const;
-
-        double get_double_value() const;
+        explicit ScriptToken(
+                std::size_t line_number, std::size_t column_number,
+                double value, const std::string &repr);
 
     }; // class ScriptToken
 

@@ -11,7 +11,7 @@ zsvm::ScriptToken zsvm::ScriptCommand::consume_first_token(
         throw std::invalid_argument(
                 "Command ended prematurely; cannot be empty");
     }
-    ScriptToken::Type type = token_iterator->get_type();
+    const ScriptToken::Type type = token_iterator->type;
     if (type != ScriptToken::Type::ADD
         && type != ScriptToken::Type::DECLARE
         && type != ScriptToken::Type::EXPAND
@@ -32,12 +32,12 @@ std::string zsvm::ScriptCommand::consume_identifier(
                 "Command ended prematurely; "
                         "expected to see parameter name");
     }
-    if (token_iterator->get_type() != ScriptToken::Type::IDENTIFIER) {
+    if (token_iterator->type != ScriptToken::Type::IDENTIFIER) {
         throw std::invalid_argument(
                 "Invalid command; "
                         "LHS of named parameter is not a valid name");
     }
-    return (token_iterator++)->get_string_value();
+    return (token_iterator++)->string_value;
 }
 
 
@@ -49,7 +49,7 @@ void zsvm::ScriptCommand::consume_equals(
                 "Command ended prematurely; "
                         "expected to see equals sign");
     }
-    if (token_iterator->get_type() != ScriptToken::Type::EQUALS) {
+    if (token_iterator->type != ScriptToken::Type::EQUALS) {
         throw std::invalid_argument(
                 "Invalid command; LHS of named parameter "
                         "not followed by equals sign");
@@ -66,7 +66,7 @@ zsvm::ScriptToken zsvm::ScriptCommand::consume_value(
                 "Command ended prematurely; "
                         "expected to see named parameter value");
     }
-    ScriptToken::Type type = token_iterator->get_type();
+    const ScriptToken::Type type = token_iterator->type;
     if (type != ScriptToken::Type::IDENTIFIER
         && type != ScriptToken::Type::INTEGER
         && type != ScriptToken::Type::DECIMAL) {
@@ -86,7 +86,7 @@ bool zsvm::ScriptCommand::consume_right_paren_or_comma(
                 "Command ended prematurely; "
                         "expected to see right parenthesis or comma");
     }
-    ScriptToken::Type type = token_iterator->get_type();
+    const ScriptToken::Type type = token_iterator->type;
     if (type != ScriptToken::Type::RIGHT_PAREN
         && type != ScriptToken::Type::COMMA) {
         throw std::invalid_argument(
@@ -110,7 +110,7 @@ zsvm::ScriptCommand::ScriptCommand(const std::vector<ScriptToken> &tokens)
     auto token_iterator = tokens.begin();
     words.push_back(consume_first_token(token_iterator, tokens.end()));
     for (; token_iterator != tokens.end(); ++token_iterator) {
-        ScriptToken::Type type = token_iterator->get_type();
+        const ScriptToken::Type type = token_iterator->type;
         if (ScriptToken::PUNCTUATION_TOKENS.count(type)) {
             if (type == ScriptToken::Type::LEFT_PAREN) {
                 ++token_iterator;
