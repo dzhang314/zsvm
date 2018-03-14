@@ -16,7 +16,35 @@
 
 namespace zsvm {
 
+    typedef double (*packed_determinant_inverse_function_t)(
+            const double *__restrict__ x, double *__restrict__ y);
+
+    typedef double (*packed_kinetic_trace_function_t)(
+            const double *__restrict__ a, const double *__restrict__ b,
+            const double *__restrict__ c, const double *__restrict__ m);
+
+    typedef double (*packed_quadratic_form_function_t)(
+            const double *__restrict__ x, const double *__restrict__ v);
+
+    typedef void (*packed_permutation_conjugate_function_t)(
+            const double *__restrict__ x, const double *__restrict__ p,
+            double *__restrict__ y);
+
     class SphericalECGContext {
+
+    private: // =================== STATIC PACKED LINEAR ALGEBRA FUNCTION ARRAYS
+
+        static const packed_determinant_inverse_function_t
+                PACKED_DETERMINANT_INVERSE[];
+
+        static const packed_kinetic_trace_function_t
+                PACKED_KINETIC_TRACE[];
+
+        static const packed_quadratic_form_function_t
+                PACKED_QUADRATIC_FORM[];
+
+        static const packed_permutation_conjugate_function_t
+                PACKED_PERMUTATION_CONJUGATE[];
 
     private: // =============================================== MEMBER VARIABLES
 
@@ -39,6 +67,15 @@ namespace zsvm {
         double *__restrict__ const bx;
         double *__restrict__ const cx;
         double *__restrict__ const dx;
+
+        const packed_determinant_inverse_function_t
+                packed_determinant_inverse;
+        const packed_kinetic_trace_function_t
+                packed_kinetic_trace;
+        const packed_quadratic_form_function_t
+                packed_quadratic_form;
+        const packed_permutation_conjugate_function_t
+                packed_permutation_conjugate;
 
 #ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
         unsigned long long int matrix_element_calls;

@@ -193,55 +193,45 @@ int main() {
     std::cout << std::scientific;
     std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
 
-    zsvm::ScriptParser parser("../example_script.zscr");
-    while (true) {
-        zsvm::ScriptCommand command = parser.get_next_command();
-        if (command.empty()) {
-            break;
-        } else {
-            std::cout << command << std::endl;
-        }
+    const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};
+    const zsvm::Particle electron_down = {0, 1.0, -1.0, zsvm::Spin::DOWN};
+//    const zsvm::Particle positron_up = {1, 1.0, +1.0, zsvm::Spin::UP};
+//    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
+    const zsvm::Particle beryllium_nucleus =
+            {2, 16538.028978017737, +4.0, zsvm::Spin::UP};
+    const std::vector<zsvm::Particle> particles = {
+            electron_up, electron_down, electron_up, electron_down,
+            beryllium_nucleus};
+    zsvm::SphericalECGVariationalOptimizer optimizer(particles, 3);
+
+    for (std::size_t basis_size = 0; basis_size < 100; ++basis_size) {
+        PRINT_EXECUTION_TIME(
+                optimizer.expand_amoeba(10, 0.5, 200);
+                optimizer.recompute_solver_matrices();
+                std::cout << optimizer.get_ground_state_energy() << std::endl;
+                std::ostringstream basis_output_file_name;
+                basis_output_file_name << "basis-";
+                basis_output_file_name << std::setw(8) << std::setfill('0');
+                basis_output_file_name << basis_size + 1 << ".tsv";
+                std::ofstream basis_output_file(basis_output_file_name.str());
+                basis_output_file << std::scientific;
+                basis_output_file << std::setprecision(
+                        std::numeric_limits<double>::max_digits10);
+                for (const auto &basis_element : optimizer.basis) {
+                    for (std::size_t i = 0; i < basis_element.size(); ++i) {
+                        if (i > 0) { basis_output_file << '\t'; }
+                        basis_output_file << basis_element[i];
+                    }
+                    basis_output_file << std::endl;
+                });
     }
 
-//    const zsvm::Particle electron_up = {0, 1.0, -1.0, zsvm::Spin::UP};
-//    const zsvm::Particle electron_down = {0, 1.0, -1.0, zsvm::Spin::DOWN};
-////    const zsvm::Particle positron_up = {1, 1.0, +1.0, zsvm::Spin::UP};
-////    const zsvm::Particle positron_down = {1, 1.0, +1.0, zsvm::Spin::DOWN};
-//    const zsvm::Particle beryllium_nucleus =
-//            {2, 16538.028978017737, +4.0, zsvm::Spin::UP};
-//    const std::vector<zsvm::Particle> particles = {
-//            electron_up, electron_down, electron_up, electron_down,
-//            beryllium_nucleus};
-//    zsvm::SphericalECGVariationalOptimizer optimizer(particles, 3);
-//
-//    PRINT_EXECUTION_TIME(
-//            for (std::size_t basis_size = 0; basis_size < 100; ++basis_size) {
-//                optimizer.expand_amoeba(100, 0.5, 200);
-//                optimizer.recompute_solver_matrices();
-//                std::cout << optimizer.get_ground_state_energy() << std::endl;
-//                std::ostringstream basis_output_file_name;
-//                basis_output_file_name << "basis-";
-//                basis_output_file_name << std::setw(8) << std::setfill('0');
-//                basis_output_file_name << basis_size + 1 << ".tsv";
-//                std::ofstream basis_output_file(basis_output_file_name.str());
-//                basis_output_file << std::scientific;
-//                basis_output_file << std::setprecision(
-//                        std::numeric_limits<double>::max_digits10);
-//                for (const auto &basis_element : optimizer.basis) {
-//                    for (std::size_t i = 0; i < basis_element.size(); ++i) {
-//                        if (i > 0) { basis_output_file << '\t'; }
-//                        basis_output_file << basis_element[i];
-//                    }
-//                    basis_output_file << std::endl;
-//                }
-//            });
-//
-//#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
-//    std::cout << "Matrix element calls:       "
-//              << optimizer.context.get_matrix_element_calls() << std::endl;
-//    std::cout << "Matrix element time:        "
-//              << optimizer.context.get_matrix_element_time() << std::endl;
-//#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+#ifdef ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
+    std::cout << "Matrix element calls:       "
+              << optimizer.context.get_matrix_element_calls() << std::endl;
+    std::cout << "Matrix element time:        "
+              << optimizer.context.get_matrix_element_time() << std::endl;
+#endif // ZSVM_SPHERICAL_ECG_CONTEXT_TIMING_ENABLED
 
     return 0;
 }
