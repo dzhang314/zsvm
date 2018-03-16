@@ -12,13 +12,8 @@ zsvm::ScriptToken zsvm::ScriptCommand::consume_first_token(
                 "Command ended prematurely; cannot be empty");
     }
     const ScriptToken::Type type = token_iterator->type;
-    if (type != ScriptToken::Type::ADD
-        && type != ScriptToken::Type::DECLARE
-        && type != ScriptToken::Type::EXPAND
-        && type != ScriptToken::Type::SET) {
-        throw std::invalid_argument(
-                "Invalid command; first word must be add, declare, "
-                        "expand, or set");
+    if (ScriptToken::PUNCTUATION_TOKENS.count(type) > 0) {
+        std::exit(EXIT_FAILURE); // TODO: Write error message.
     }
     return *(token_iterator++);
 }

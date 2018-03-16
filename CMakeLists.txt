@@ -13,6 +13,8 @@ set_source_files_properties(PackedLinearAlgebra.cpp
         PROPERTIES COMPILE_FLAGS -ffast-math)
 
 add_executable(zsvm
+        EnumTypes.hpp
+        EnumTypes.cpp
         Particle.hpp
         Particle.cpp
         Permutation.hpp

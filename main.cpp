@@ -9,7 +9,7 @@
 #include <vector>
 
 // Project-specific headers
-#include "Particle.hpp"
+#include "EnumTypes.hpp"
 #include "SphericalECGContext.hpp"
 #include "RealVariationalSolver.hpp"
 #include "AmoebaOptimizer.hpp"
@@ -189,116 +189,216 @@ namespace zsvm {
 } // namespace zsvm
 
 
-namespace zsvm { // @formatter:off
-
-static const char *DUPLICATE_DECLARE_PARTICLE_TYPE =
-"DUPLICATION ERROR: Particle type %s declared more than once.\n";
-
-static const char *SYNTAX_DECLARE_PARTICLE_TYPE_WORDS =
-"SYNTAX ERROR: Incorrect \"declare particle_type\" command. "
-"Expected format is: \"declare particle_type <name> (...);\"\n";
-
-static const char *SYNTAX_DECLARE_PARTICLE_TYPE_PARAMS =
-"SYNTAX ERROR: Incorrect parameters issued to \"declare particle_type\" "
-"command. Expected parameters are:\n"
-"    \"spin = <integer OR half-integer>\"\n"
-"    \"statistics = <boson OR fermion OR distinguishable>\"\n";
-
-} // namespace zsvm @formatter:on
-
-
 namespace zsvm {
 
-    enum class ExchangeStatistics {
-        BOSON, FERMION, DISTINGUISHABLE
-    }; // enum class ExchangeStatistics
+    void error_exit(const char *message) {
+        std::cerr << message << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+
+    void error_exit(const char *message, const std::string &arg) {
+        std::fprintf(stderr, message, arg.data());
+        std::exit(EXIT_FAILURE);
+    }
+
+
+    long long int get_integer(const ScriptCommand &command) {
+        const auto &words = command.get_words();
+        if (words.size() != 3
+            || words[2].type != ScriptToken::Type::INTEGER) {
+            std::cerr << "ERROR: Invalid command";
+            // TODO: Improve reporting of this error. Don't print tokens.
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << ". Expected format is <verb> <noun> <integer>."
+                      << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        return words[2].integer_value;
+    }
+
+
+    template <typename ValueType>
+    ValueType get_enum_parameter(
+            const ScriptCommand &command,
+            const std::string &param_name,
+            const std::map<std::string, ValueType> &valid_values) {
+        const auto &words = command.get_words();
+        const auto &params = command.get_named_parameters();
+        const auto token_iter = params.find(param_name);
+        if (token_iter == params.end()) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " lacks required named parameter \"" << param_name
+                      << "\". Valid values are:";
+            for (const auto &pair : valid_values) {
+                std::cerr << " \"" << pair.first << '\"';
+            }
+            std::cerr << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        const ScriptToken &token = token_iter->second;
+        if (token.type != ScriptToken::Type::IDENTIFIER) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " given invalid value " << token
+                      << " for required named parameter \"" << param_name
+                      << "\". Valid values are:";
+            for (const auto &pair : valid_values) {
+                std::cerr << " \"" << pair.first << '\"';
+            }
+            std::cerr << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        const auto value_iter = valid_values.find(token.string_value);
+        if (value_iter == valid_values.end()) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " given invalid value " << token
+                      << " for required named parameter \"" << param_name
+                      << "\". Valid values are:";
+            for (const auto &pair : valid_values) {
+                std::cerr << " \"" << pair.first << '\"';
+            }
+            std::cerr << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        return value_iter->second;
+    }
+
+
+    double get_double_parameter(
+            const ScriptCommand &command, const std::string &param_name) {
+        const auto &words = command.get_words();
+        const auto &params = command.get_named_parameters();
+        const auto token_iter = params.find(param_name);
+        if (token_iter == params.end()) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " lacks required named parameter \"" << param_name
+                      << "\", which is expected to be an integer or real "
+                      << "number." << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        const ScriptToken &token = token_iter->second;
+        if (token.type != ScriptToken::Type::INTEGER
+            && token.type != ScriptToken::Type::DECIMAL) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " given invalid value " << token
+                      << " for required named parameter \"" << param_name
+                      << "\", which is expected to be an integer or real "
+                      << "number." << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        return token.double_value;
+    }
+
+
+    const std::string &get_string_parameter(
+            const ScriptCommand &command, const std::string &param_name) {
+        const auto &words = command.get_words();
+        const auto &params = command.get_named_parameters();
+        const auto token_iter = params.find(param_name);
+        if (token_iter == params.end()) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " lacks required named parameter \"" << param_name
+                      << "\", which is expected to be a valid identifier."
+                      << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        const ScriptToken &token = token_iter->second;
+        if (token.type != ScriptToken::Type::IDENTIFIER) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " given invalid value " << token
+                      << " for required named parameter \"" << param_name
+                      << "\", which is expected to be a valid identifier."
+                      << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        return token.string_value;
+    }
 
 
     class ScriptInterpreter {
 
         ScriptParser parser;
+        std::optional<int> space_dimension;
         std::map<std::string, std::tuple<std::size_t, ExchangeStatistics, int>>
                 particle_types; // name -> (ID, exchange statistics, spin)
+        std::map<std::string, DispersionRelation> dispersion_relations;
+        std::map<std::string, ConfiningPotential> confining_potentials;
+        std::map<std::string, PairwisePotential> pairwise_potentials;
 
     public: // ===================================================== CONSTRUCTOR
 
         explicit ScriptInterpreter(const std::string &script_file_name)
                 : parser(script_file_name),
+                  space_dimension(),
                   particle_types() {}
+
+    private: // ================================================================
+
+        const std::string &get_unique_identifier(const ScriptCommand &command) {
+            const auto &words = command.get_words();
+            if (words.size() != 3
+                || words[2].type != ScriptToken::Type::IDENTIFIER) {
+                std::cerr << "ERROR: Invalid command";
+                // TODO: Improve reporting of this error. Don't print tokens.
+                for (const auto &word : words) { std::cerr << ' ' << word; }
+                std::cerr << ". Expected format is <verb> <noun> <name> "
+                          << "where <name> is a valid identifier." << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+            const std::string &name = words[2].string_value;
+            if (particle_types.count(name) > 0
+                || dispersion_relations.count(name) > 0
+                || confining_potentials.count(name) > 0
+                || pairwise_potentials.count(name) > 0) {
+                std::cerr << "ERROR: Command";
+                for (const auto &word : words) { std::cerr << ' ' << word; }
+                std::cerr << " redefines a name (" << name
+                          << ") which has already been defined." << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+            return name;
+        }
 
     public: // =================================================================
 
-        void error_exit(const char *message) {
-            std::cerr << message << std::endl;
-            std::exit(EXIT_FAILURE);
-        }
-
-        void error_exit(const char *message, const std::string &arg) {
-            std::fprintf(stderr, message, arg.data());
+        void set_space_dimension(const ScriptCommand &command) {
+            // Precondition: command has at least two words, and
+            // the first two words are <SET> <SPACE_DIMENSION>.
+            // TODO: Report error if unnecessary named parameters are given.
+            // TODO: Make space_dimension a long long int.
+            space_dimension = get_integer(command);
+            std::cout << "INFO: Setting ambient space dimension to "
+                      << *space_dimension << "." << std::endl;
         }
 
         void declare_particle_type(const ScriptCommand &command) {
             // Precondition: command has at least two words, and
             // the first two words are <DECLARE> <PARTICLE_TYPE>.
-            using T = ScriptToken::Type;
-            const auto &words = command.get_words();
-            const auto &params = command.get_named_parameters();
-            // ========================================== VALIDATE COMMAND WORDS
-            if (words.size() != 3 || words[2].type != T::IDENTIFIER) {
-                error_exit(SYNTAX_DECLARE_PARTICLE_TYPE_WORDS);
-            }
-            // ======================================= VALIDATE NAMED PARAMETERS
-            if (params.size() != 2
-                || params.count("spin") == 0
-                || params.count("statistics") == 0) {
-                error_exit(SYNTAX_DECLARE_PARTICLE_TYPE_PARAMS);
-            }
-            // =================================================== VALIDATE NAME
-            const std::string &name_value = words[2].string_value;
-            if (particle_types.count(name_value) > 0) {
-                error_exit(DUPLICATE_DECLARE_PARTICLE_TYPE, name_value);
-            }
-            // =================================================== VALIDATE SPIN
-            const ScriptToken &spin = params.find("spin")->second;
-            if (spin.type != T::INTEGER && spin.type != T::DECIMAL) {
-                error_exit(SYNTAX_DECLARE_PARTICLE_TYPE_PARAMS);
-            }
+            const std::string &name_value = get_unique_identifier(command);
             const auto spin_value = static_cast<int>(
-                    std::round(2.0 * spin.double_value));
-            // ============================================= VALIDATE STATISTICS
-            const ScriptToken &statistics = params.find("statistics")->second;
-            if (statistics.type != T::IDENTIFIER) {
-                error_exit(SYNTAX_DECLARE_PARTICLE_TYPE_PARAMS);
-            }
-            const bool is_boson = (statistics.string_value == "boson");
-            const bool is_fermion = (statistics.string_value == "fermion");
-            const bool is_distinguishable =
-                    (statistics.string_value == "distinguishable");
-            ExchangeStatistics stat_value;
-            if (is_boson) {
-                stat_value = ExchangeStatistics::BOSON;
-            } else if (is_fermion) {
-                stat_value = ExchangeStatistics::FERMION;
-            } else if (is_distinguishable) {
-                stat_value = ExchangeStatistics::DISTINGUISHABLE;
-            } else {
-                error_exit(SYNTAX_DECLARE_PARTICLE_TYPE_PARAMS);
-            }
-            // ========================================== REGISTER PARTICLE TYPE
+                    std::round(2.0 * get_double_parameter(command, "spin")));
+            const ExchangeStatistics stat_value(get_enum_parameter(
+                    command, "statistics", ExchangeStatistics::MAP));
             const std::size_t id = particle_types.size();
             particle_types.insert({name_value,
                                    std::tie(id, stat_value, spin_value)});
-            // =================================================== PRINT SUMMARY
             std::cout << "INFO: Registered particle type \""
                       << name_value << "\" with ";
-            switch (stat_value) {
-                case ExchangeStatistics::BOSON:
+            switch (stat_value.type) {
+                case ExchangeStatistics::Type::BOSON:
                     std::cout << "bosonic exchange statistics";
                     break;
-                case ExchangeStatistics::FERMION:
+                case ExchangeStatistics::Type::FERMION:
                     std::cout << "fermionic exchange statistics";
                     break;
-                case ExchangeStatistics::DISTINGUISHABLE:
+                case ExchangeStatistics::Type::DISTINGUISHABLE:
                     std::cout << "no exchange symmetry";
                     break;
             }
@@ -311,18 +411,51 @@ namespace zsvm {
             std::cout << '.' << std::endl;
         }
 
+        void declare_dispersion_relation(const ScriptCommand &command) {
+            // Precondition: command has at least two words, and
+            // the first two words are <DECLARE> <DISPERSION_RELATION>.
+            const std::string &name = get_unique_identifier(command);
+            const DispersionRelation::Type type = get_enum_parameter(
+                    command, "interaction", DispersionRelation::MAP);
+            const double strength = get_double_parameter(command, "strength");
+            const double exponent = get_double_parameter(command, "exponent");
+            const std::string &carrier =
+                    get_string_parameter(command, "carrier");
+            const DispersionRelation dispersion_relation(
+                    type, strength, exponent, carrier);
+            dispersion_relations.insert({name, dispersion_relation});
+            // TODO: Print dispersion relation type.
+            std::cout << "INFO: Registered dispersion relation \"" << name
+                      << "\" with strength " << strength
+                      << ", exponent " << exponent
+                      << ", and carrier \"" << carrier << "\"." << std::endl;
+        }
+
         void run() {
             using T = ScriptToken::Type;
             while (true) {
                 ScriptCommand command = parser.get_next_command();
                 if (command.empty()) { break; }
                 const auto &words = command.get_words();
-                if (words[0].type == T::DECLARE) {
+                if (words[0].type == T::DECLARE && words.size() >= 2) {
+                    switch (words[1].type) {
+                        case T::PARTICLE_TYPE:
+                            declare_particle_type(command);
+                            break;
+                        case T::DISPERSION_RELATION:
+                            declare_dispersion_relation(command);
+                            break;
+                        default:
+                            std::cout << "WARNING: Unknown \"declare\" command "
+                                      << command << ". Ignoring this command."
+                                      << std::endl;
+                    }
+                } else if (words[0].type == T::SET) {
                     if (words.size() >= 2
-                        && words[1].type == T::PARTICLE_TYPE) {
-                        declare_particle_type(command);
+                        && words[1].type == T::SPACE_DIMENSION) {
+                        set_space_dimension(command);
                     } else {
-                        std::cout << "WARNING: Unknown \"declare\" command "
+                        std::cout << "WARNING: Unknown \"set\" command "
                                   << command << ". Ignoring this command."
                                   << std::endl;
                     }
@@ -340,7 +473,8 @@ namespace zsvm {
 
 int main() {
     std::cout << std::scientific;
-    std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
+    std::cout
+            << std::setprecision(std::numeric_limits<double>::max_digits10);
 
     zsvm::ScriptInterpreter interpreter("../example_script.zscr");
     interpreter.run();
