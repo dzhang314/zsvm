@@ -322,6 +322,57 @@ namespace zsvm {
     }
 
 
+    const char *to_descriptive_string(ExchangeStatistics::Type type) {
+        switch (type) {
+            case ExchangeStatistics::Type::BOSON:
+                return "bosonic exchange statistics";
+            case ExchangeStatistics::Type::FERMION:
+                return "fermionic exchange statistics";
+            case ExchangeStatistics::Type::DISTINGUISHABLE:
+                return "no exchange symmetry";
+        }
+        return ""; // Dummy return to suppress compiler warning.
+    }
+
+
+    std::string to_unsigned_spin(int spin) {
+        std::ostringstream stream;
+        if (spin % 2 == 0) {
+            stream << spin / 2;
+        } else {
+            stream << spin << "/2";
+        }
+        return stream.str();
+    }
+
+
+    std::string to_signed_spin(int spin) {
+        if (spin == 0) { return "0"; }
+        int abs_spin = std::abs(spin);
+        std::ostringstream stream;
+        stream << ((spin > 0) ? '+' : '-');
+        if (abs_spin % 2 == 0) {
+            stream << abs_spin / 2;
+        } else {
+            stream << abs_spin << "/2";
+        }
+        return stream.str();
+    }
+
+
+    struct GeneralParticle {
+
+        const std::size_t type_id;
+        const int spin;
+        const std::map<std::string, double> carriers;
+
+        GeneralParticle(std::size_t type_id, int spin,
+                        const std::map<std::string, double> &carriers)
+                : type_id(type_id), spin(spin), carriers(carriers) {}
+
+    }; // class GeneralParticle
+
+
     class ScriptInterpreter {
 
         ScriptParser parser;
@@ -331,13 +382,18 @@ namespace zsvm {
         std::map<std::string, DispersionRelation> dispersion_relations;
         std::map<std::string, ConfiningPotential> confining_potentials;
         std::map<std::string, PairwisePotential> pairwise_potentials;
+        std::vector<GeneralParticle> particles;
 
     public: // ===================================================== CONSTRUCTOR
 
         explicit ScriptInterpreter(const std::string &script_file_name)
                 : parser(script_file_name),
                   space_dimension(),
-                  particle_types() {}
+                  particle_types(),
+                  dispersion_relations(),
+                  confining_potentials(),
+                  pairwise_potentials(),
+                  particles() {}
 
     private: // ================================================================
 
@@ -368,47 +424,99 @@ namespace zsvm {
 
     public: // =================================================================
 
-        void set_space_dimension(const ScriptCommand &command) {
-            // Precondition: command has at least two words, and
-            // the first two words are <SET> <SPACE_DIMENSION>.
-            // TODO: Report error if unnecessary named parameters are given.
-            // TODO: Make space_dimension a long long int.
-            space_dimension = get_integer(command);
-            std::cout << "INFO: Setting ambient space dimension to "
-                      << *space_dimension << "." << std::endl;
+        void add_particle(const ScriptCommand &command) {
+            // =================================================== VALIDATE TYPE
+            const std::string &type_str = get_string_parameter(command, "type");
+            const auto type_iter = particle_types.find(type_str);
+            if (type_iter == particle_types.end()) {
+                std::cerr << "ERROR: Command " << command
+                          << " references undeclared particle type \""
+                          << type_str << "\"." << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+            // Note: CLion does not yet understand C++17 structured bindings.
+            // @formatter:off
+            const auto [type_id, type_stat, type_spin] = type_iter->second;
+             // formatter:on
+            if (type_stat.type != ExchangeStatistics::Type::FERMION) {
+                std::cerr << "ERROR: Currently, only particles with "
+                          << "fermionic exchange statistics are supported. "
+                          << "Bosonic and distinguishable particle types "
+                          << "will be supported in a future release of ZSVM."
+                          << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+            // =================================================== VALIDATE SPIN
+            const auto spin_value = static_cast<int>(std::round(
+                    2.0 * get_double_parameter(command, "spin")));
+            if (std::abs(spin_value) > type_spin) {
+                std::cerr << "ERROR: Cannot add particle of type \""
+                          << type_str << "\" with z-component spin "
+                          << to_signed_spin(spin_value)
+                          << " exceeding the particle type's total spin "
+                          << to_unsigned_spin(type_spin) << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+            if (std::abs(spin_value) % 2 != type_spin % 2) {
+                std::cerr << "ERROR: Cannot add particle of type \""
+                          << type_str << "\" with z-component spin "
+                          << to_signed_spin(spin_value)
+                          << " of parity not matching its particle type's "
+                          << "total spin " << to_unsigned_spin(type_spin)
+                          << ". Both must be integers or half-integers."
+                          << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
+            // ================================================ EXTRACT CARRIERS
+            std::map<std::string, double> carriers;
+            for (const auto &pair : command.get_named_parameters()) {
+                if (pair.first != "type" && pair.first != "spin") {
+                    if (pair.second.type != ScriptToken::Type::INTEGER
+                        && pair.second.type != ScriptToken::Type::DECIMAL) {
+                        std::cerr << "ERROR: Particle carrier \""
+                                  << pair.first << "\" is expected to have "
+                                  << "an integer or real value." << std::endl;
+                        std::exit(EXIT_FAILURE);
+                    }
+                    carriers.insert({pair.first, pair.second.double_value});
+                }
+            }
+            // =============================================== REGISTER PARTICLE
+            particles.emplace_back(type_id, spin_value, carriers);
+            // =================================================== PRINT SUMMARY
+            std::cout << "INFO: Adding particle with type ID "
+                      << type_id << ", "
+                      << to_descriptive_string(type_stat.type)
+                      << ", and z-component spin "
+                      << to_signed_spin(spin_value) << '.' << std::endl;
+            for (const auto &pair : carriers) {
+                std::cout << "    " << pair.first
+                          << " = " << pair.second << std::endl;
+            }
         }
 
         void declare_particle_type(const ScriptCommand &command) {
             // Precondition: command has at least two words, and
             // the first two words are <DECLARE> <PARTICLE_TYPE>.
             const std::string &name_value = get_unique_identifier(command);
-            const auto spin_value = static_cast<int>(
-                    std::round(2.0 * get_double_parameter(command, "spin")));
+            const auto spin_value = static_cast<int>(std::round(
+                    2.0 * get_double_parameter(command, "spin")));
+            if (spin_value < 0) {
+                std::cerr << "ERROR: Cannot declare particle type \""
+                          << name_value << "\" with negative total spin."
+                          << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
             const ExchangeStatistics stat_value(get_enum_parameter(
                     command, "statistics", ExchangeStatistics::MAP));
             const std::size_t id = particle_types.size();
             particle_types.insert({name_value,
                                    std::tie(id, stat_value, spin_value)});
             std::cout << "INFO: Registered particle type \""
-                      << name_value << "\" with ";
-            switch (stat_value.type) {
-                case ExchangeStatistics::Type::BOSON:
-                    std::cout << "bosonic exchange statistics";
-                    break;
-                case ExchangeStatistics::Type::FERMION:
-                    std::cout << "fermionic exchange statistics";
-                    break;
-                case ExchangeStatistics::Type::DISTINGUISHABLE:
-                    std::cout << "no exchange symmetry";
-                    break;
-            }
-            std::cout << " and spin ";
-            if (spin_value % 2 == 0) {
-                std::cout << spin_value / 2;
-            } else {
-                std::cout << spin_value << "/2";
-            }
-            std::cout << '.' << std::endl;
+                      << name_value << "\" with "
+                      << to_descriptive_string(stat_value.type)
+                      << " and spin " << to_unsigned_spin(spin_value)
+                      << '.' << std::endl;
         }
 
         void declare_dispersion_relation(const ScriptCommand &command) {
@@ -431,19 +539,85 @@ namespace zsvm {
                       << ", and carrier \"" << carrier << "\"." << std::endl;
         }
 
+        void declare_confining_potential(const ScriptCommand &command) {
+            // Precondition: command has at least two words, and
+            // the first two words are <DECLARE> <CONFINING_POTENTIAL>.
+            const std::string &name = get_unique_identifier(command);
+            const ConfiningPotential::Type type = get_enum_parameter(
+                    command, "interaction", ConfiningPotential::MAP);
+            const double strength = get_double_parameter(command, "strength");
+            const double exponent = get_double_parameter(command, "exponent");
+            const std::string &carrier =
+                    get_string_parameter(command, "carrier");
+            const ConfiningPotential confining_potential(
+                    type, strength, exponent, carrier);
+            confining_potentials.insert({name, confining_potential});
+            // TODO: Print confining potential type.
+            std::cout << "INFO: Registered confining potential \"" << name
+                      << "\" with strength " << strength
+                      << ", exponent " << exponent
+                      << ", and carrier \"" << carrier << "\"." << std::endl;
+        }
+
+        void declare_pairwise_potential(const ScriptCommand &command) {
+            // Precondition: command has at least two words, and
+            // the first two words are <DECLARE> <PAIRWISE_POTENTIAL>.
+            const std::string &name = get_unique_identifier(command);
+            const PairwisePotential::Type type = get_enum_parameter(
+                    command, "interaction", PairwisePotential::MAP);
+            const double strength = get_double_parameter(command, "strength");
+            const double exponent = get_double_parameter(command, "exponent");
+            const std::string &carrier =
+                    get_string_parameter(command, "carrier");
+            const PairwisePotential pairwise_potential(
+                    type, strength, exponent, carrier);
+            pairwise_potentials.insert({name, pairwise_potential});
+            // TODO: Print pairwise potential type.
+            std::cout << "INFO: Registered pairwise potential \"" << name
+                      << "\" with strength " << strength
+                      << ", exponent " << exponent
+                      << ", and carrier \"" << carrier << "\"." << std::endl;
+        }
+
+        void set_space_dimension(const ScriptCommand &command) {
+            // Precondition: command has at least two words, and
+            // the first two words are <SET> <SPACE_DIMENSION>.
+            // TODO: Report error if unnecessary named parameters are given.
+            // TODO: Make space_dimension a long long int.
+            space_dimension = get_integer(command);
+            std::cout << "INFO: Setting ambient space dimension to "
+                      << *space_dimension << "." << std::endl;
+        }
+
         void run() {
             using T = ScriptToken::Type;
             while (true) {
                 ScriptCommand command = parser.get_next_command();
                 if (command.empty()) { break; }
                 const auto &words = command.get_words();
-                if (words[0].type == T::DECLARE && words.size() >= 2) {
+                if (words[0].type == T::ADD && words.size() >= 2) {
+                    switch (words[1].type) {
+                        case T::PARTICLE:
+                            add_particle(command);
+                            break;
+                        default:
+                            std::cout << "WARNING: Unknown \"add\" command "
+                                      << command << ". Ignoring this command."
+                                      << std::endl;
+                    }
+                } else if (words[0].type == T::DECLARE && words.size() >= 2) {
                     switch (words[1].type) {
                         case T::PARTICLE_TYPE:
                             declare_particle_type(command);
                             break;
                         case T::DISPERSION_RELATION:
                             declare_dispersion_relation(command);
+                            break;
+                        case T::CONFINING_POTENTIAL:
+                            declare_confining_potential(command);
+                            break;
+                        case T::PAIRWISE_POTENTIAL:
+                            declare_pairwise_potential(command);
                             break;
                         default:
                             std::cout << "WARNING: Unknown \"declare\" command "
