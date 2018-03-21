@@ -13,7 +13,7 @@ namespace dznl {
     bool is_invariant_permutation(const std::vector<int> &items,
                                   const std::vector<std::size_t> &permutation);
 
-    std::size_t count_changes(const std::vector<zsvm::Spin> &items,
+    std::size_t count_changes(const std::vector<int> &items,
                               const std::vector<std::size_t> &permutation);
 
     std::size_t count_inversions(const std::vector<std::size_t> &permutation);

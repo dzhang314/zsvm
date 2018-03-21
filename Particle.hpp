@@ -3,25 +3,22 @@
 
 // C++ standard library headers
 #include <iostream> // for std::ostream
+#include <map> // for std::map
+#include <string> // for std::string
 
 namespace zsvm {
 
-    enum class Spin {
-        UP,
-        DOWN,
-    };
-
     struct Particle {
-        int type;
-        double mass;
-        double charge;
-        Spin spin;
-    };
+
+        const std::size_t type_id;
+        const int spin;
+        const std::map<std::string, double> carriers;
+
+        Particle(std::size_t type_id, int spin,
+                 const std::map<std::string, double> &carriers);
+
+    }; // struct Particle
 
 } // namespace zsvm
-
-std::ostream &operator<<(std::ostream &os, zsvm::Spin spin);
-
-std::ostream &operator<<(std::ostream &os, const zsvm::Particle &particle);
 
 #endif // ZSVM_PARTICLE_HPP_INCLUDED

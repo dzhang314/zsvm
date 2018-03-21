@@ -21,7 +21,7 @@ bool dznl::is_invariant_permutation(
 }
 
 
-std::size_t dznl::count_changes(const std::vector<zsvm::Spin> &items,
+std::size_t dznl::count_changes(const std::vector<int> &items,
                                 const std::vector<std::size_t> &permutation) {
     const std::size_t n = items.size();
     if (permutation.size() != n) {
@@ -31,7 +31,7 @@ std::size_t dznl::count_changes(const std::vector<zsvm::Spin> &items,
     }
     std::size_t count = 0;
     for (std::size_t i = 0; i < n; ++i) {
-        if (!(items[i] == items[permutation[i]])) { ++count; }
+        if (items[i] != items[permutation[i]]) { ++count; }
     }
     return count;
 }

@@ -1,22 +1,6 @@
 #include "Particle.hpp"
 
 
-std::ostream &operator<<(std::ostream &os, zsvm::Spin spin) {
-    switch (spin) {
-        case zsvm::Spin::UP:
-            os << "UP";
-            break;
-        case zsvm::Spin::DOWN:
-            os << "DOWN";
-            break;
-    }
-    return os;
-}
-
-
-std::ostream &operator<<(std::ostream &os, const zsvm::Particle &particle) {
-    return os << "Particle(type=" << particle.type
-              << ", mass=" << particle.mass
-              << ", charge=" << particle.charge
-              << ", spin=" << particle.spin << ")";
-}
+zsvm::Particle::Particle(std::size_t type_id, int spin,
+                         const std::map<std::string, double> &carriers)
+        : type_id(type_id), spin(spin), carriers(carriers) {}

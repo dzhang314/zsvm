@@ -360,19 +360,6 @@ namespace zsvm {
     }
 
 
-    struct GeneralParticle {
-
-        const std::size_t type_id;
-        const int spin;
-        const std::map<std::string, double> carriers;
-
-        GeneralParticle(std::size_t type_id, int spin,
-                        const std::map<std::string, double> &carriers)
-                : type_id(type_id), spin(spin), carriers(carriers) {}
-
-    }; // class GeneralParticle
-
-
     class ScriptInterpreter {
 
         ScriptParser parser;
@@ -382,7 +369,7 @@ namespace zsvm {
         std::map<std::string, DispersionRelation> dispersion_relations;
         std::map<std::string, ConfiningPotential> confining_potentials;
         std::map<std::string, PairwisePotential> pairwise_potentials;
-        std::vector<GeneralParticle> particles;
+        std::vector<Particle> particles;
 
     public: // ===================================================== CONSTRUCTOR
 
