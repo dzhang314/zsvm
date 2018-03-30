@@ -12,7 +12,6 @@ const zsvm::packed_determinant_inverse_function_t
         packed_determinant_inverse_4,
         packed_determinant_inverse_5,
         packed_determinant_inverse_6,
-        packed_determinant_inverse_7,
 };
 
 
@@ -23,8 +22,6 @@ const zsvm::packed_kinetic_trace_function_t
         packed_kinetic_trace_3,
         packed_kinetic_trace_4,
         packed_kinetic_trace_5,
-        packed_kinetic_trace_6,
-        packed_kinetic_trace_7,
 };
 
 
@@ -35,8 +32,6 @@ const zsvm::packed_quadratic_form_function_t
         packed_quadratic_form_3,
         packed_quadratic_form_4,
         packed_quadratic_form_5,
-        packed_quadratic_form_6,
-        packed_quadratic_form_7,
 };
 
 
@@ -47,8 +42,6 @@ const zsvm::packed_permutation_conjugate_function_t
         packed_permutation_conjugate_3,
         packed_permutation_conjugate_4,
         packed_permutation_conjugate_5,
-        packed_permutation_conjugate_6,
-        packed_permutation_conjugate_7,
 };
 
 
