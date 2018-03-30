@@ -11,7 +11,6 @@ const zsvm::packed_determinant_inverse_function_t
         packed_determinant_inverse_3,
         packed_determinant_inverse_4,
         packed_determinant_inverse_5,
-        packed_determinant_inverse_6,
 };
 
 
