@@ -10,7 +10,7 @@
 
 // Project-specific headers
 #include "EnumTypes.hpp"
-#include "SphericalECGContext.hpp"
+#include "Particle.hpp"
 #include "RealVariationalSolver.hpp"
 #include "AmoebaOptimizer.hpp"
 #include "ScriptParser.hpp"
@@ -25,168 +25,6 @@
                 << ::std::chrono::duration_cast<::std::chrono::nanoseconds>( \
                            __stop_time - __start_time).count() << std::endl; \
 } while (0)
-
-
-namespace zsvm {
-
-    class SphericalECGVariationalOptimizer {
-
-    public: // ================================================ MEMBER VARIABLES
-        // TODO: public for debugging
-
-        const std::size_t num_particles;
-        const std::size_t num_pairs;
-        SphericalECGContext context;
-        RealVariationalSolver solver;
-        std::vector<std::vector<double>> basis;
-        std::vector<std::vector<double>> basis_matrices;
-
-    public: // ===================================================== CONSTRUCTOR
-
-        explicit SphericalECGVariationalOptimizer(
-                const std::vector<Particle> &particles, int space_dimension)
-                : num_particles(particles.size()),
-                  num_pairs(num_particles * (num_particles - 1) / 2),
-                  context(SphericalECGContext::create(
-                          particles, space_dimension)) {}
-
-    public: // =================================================================
-
-        double get_ground_state_energy() {
-            return solver.get_eigenvalue(0);
-        }
-
-    public: // =================================================================
-
-        double augmented_ground_state_energy(
-                const double *__restrict__ new_basis_matrix) {
-            if (solver.empty()) {
-                double overlap_element, hamiltonian_element;
-                context.compute_matrix_elements(
-                        overlap_element, hamiltonian_element,
-                        new_basis_matrix, new_basis_matrix);
-                return hamiltonian_element / overlap_element;
-            } else {
-                const std::size_t basis_size = basis_matrices.size();
-                std::vector<double> new_overlap_column(basis_size + 1);
-                std::vector<double> new_hamiltonian_column(basis_size + 1);
-                for (std::size_t i = 0; i < basis_size; ++i) {
-                    context.compute_matrix_elements(
-                            new_overlap_column[i], new_hamiltonian_column[i],
-                            basis_matrices[i].data(), new_basis_matrix);
-                }
-                context.compute_matrix_elements(
-                        new_overlap_column[basis_size],
-                        new_hamiltonian_column[basis_size],
-                        new_basis_matrix, new_basis_matrix);
-                return solver.minimum_augmented_eigenvalue(
-                        new_overlap_column.data(),
-                        new_hamiltonian_column.data());
-            }
-        }
-
-        void expand_random(std::size_t num_trials) {
-            std::vector<double> new_basis_element(num_pairs);
-            std::vector<double> new_basis_matrix(num_pairs);
-            std::vector<double> best_basis_element(num_pairs);
-            std::vector<double> best_basis_matrix(num_pairs);
-            double best_energy = solver.empty()
-                                 ? std::numeric_limits<double>::max()
-                                 : solver.get_eigenvalue(0);
-            for (std::size_t trial = 0; trial < num_trials; ++trial) {
-                context.random_correlation_coefficients(
-                        new_basis_element.data());
-                context.gaussian_parameter_matrix(
-                        new_basis_element.data(), new_basis_matrix.data());
-                const double new_energy =
-                        augmented_ground_state_energy(new_basis_matrix.data());
-                if (new_energy < best_energy) {
-                    best_basis_element = new_basis_element;
-                    best_basis_matrix = new_basis_matrix;
-                    best_energy = new_energy;
-                }
-            }
-            basis.push_back(best_basis_element);
-            basis_matrices.push_back(best_basis_matrix);
-            recompute_solver_matrices();
-        }
-
-        void expand_amoeba(std::size_t num_trials,
-                           double initial_step_size,
-                           std::size_t max_steps) {
-            std::vector<double> new_basis_element(num_pairs);
-            std::vector<double> best_basis_element(num_pairs);
-            double best_energy = solver.empty()
-                                 ? std::numeric_limits<double>::max()
-                                 : solver.get_eigenvalue(0);
-            for (std::size_t trial = 0; trial < num_trials; ++trial) {
-                context.random_correlation_coefficients(
-                        new_basis_element.data());
-                const double new_energy = refine_amoeba(
-                        new_basis_element.data(), initial_step_size, max_steps);
-                if (new_energy < best_energy) {
-                    std::cout << "Improved energy to "
-                              << new_energy << std::endl;
-                    best_basis_element = new_basis_element;
-                    best_energy = new_energy;
-                }
-            }
-            basis.push_back(best_basis_element);
-            std::vector<double> best_basis_matrix(num_pairs);
-            context.gaussian_parameter_matrix(
-                    best_basis_element.data(), best_basis_matrix.data());
-            basis_matrices.push_back(best_basis_matrix);
-            recompute_solver_matrices();
-        }
-
-    public: // =================================================================
-
-        double refine_amoeba(double *__restrict__ basis_element,
-                             double initial_step_size,
-                             std::size_t max_steps) {
-            std::vector<double> basis_matrix(num_pairs);
-            dznl::AmoebaOptimizer amoeba(
-                    basis_element, num_pairs, initial_step_size,
-                    [&](const double *b) {
-                        context.gaussian_parameter_matrix(
-                                b, basis_matrix.data());
-                        return augmented_ground_state_energy(
-                                basis_matrix.data());
-                    });
-            for (std::size_t step = 0; step < max_steps; ++step) {
-                amoeba.step();
-            }
-            return amoeba.current_minimum(basis_element);
-        }
-
-    public: // =================================================================
-
-        void recompute_basis_matrices() {
-            basis_matrices.clear();
-            for (const auto &basis_element : basis) {
-                std::vector<double> basis_matrix(num_pairs);
-                context.gaussian_parameter_matrix(
-                        basis_element.data(), basis_matrix.data());
-                basis_matrices.push_back(basis_matrix);
-            }
-        }
-
-        void recompute_solver_matrices() {
-            solver.set_basis_size_destructive(basis_matrices.size());
-            for (std::size_t i = 0; i < basis_matrices.size(); ++i) {
-                for (std::size_t j = 0; j < basis_matrices.size(); ++j) {
-                    context.compute_matrix_elements(
-                            solver.overlap_matrix_element(i, j),
-                            solver.hamiltonian_matrix_element(i, j),
-                            basis_matrices[i].data(),
-                            basis_matrices[j].data());
-                }
-            }
-        }
-
-    }; // class SphericalECGVariationalOptimizer
-
-} // namespace zsvm
 
 
 namespace zsvm {
@@ -363,7 +201,7 @@ namespace zsvm {
     class ScriptInterpreter {
 
         ScriptParser parser;
-        std::optional<int> space_dimension;
+        std::optional<long long int> space_dimension;
         std::map<std::string, std::tuple<std::size_t, ExchangeStatistics, int>>
                 particle_types; // name -> (ID, exchange statistics, spin)
         std::map<std::string, DispersionRelation> dispersion_relations;
@@ -570,7 +408,6 @@ namespace zsvm {
             // Precondition: command has at least two words, and
             // the first two words are <SET> <SPACE_DIMENSION>.
             // TODO: Report error if unnecessary named parameters are given.
-            // TODO: Make space_dimension a long long int.
             space_dimension = get_integer(command);
             std::cout << "INFO: Setting ambient space dimension to "
                       << *space_dimension << "." << std::endl;

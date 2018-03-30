@@ -18,15 +18,16 @@ add_executable(zsvm
         Particle.hpp
         Particle.cpp
         Permutation.hpp
-        Permutation.cpp
         JacobiCoordinates.hpp
         JacobiCoordinates.cpp
         PackedLinearAlgebra.hpp
         PackedLinearAlgebra.cpp
-        SphericalECGContext.hpp
-        SphericalECGContext.cpp
         RealVariationalSolver.hpp
         RealVariationalSolver.cpp
+        SphericalECGDispersionContext.hpp
+        SphericalECGConfiningContext.hpp
+        SphericalECGPairwiseContext.hpp
+        SphericalECGOverlapContext.hpp
         AmoebaOptimizer.hpp
         AmoebaOptimizer.cpp
         ScriptToken.hpp

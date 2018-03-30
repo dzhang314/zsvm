@@ -1,6 +1,42 @@
 #include "PackedLinearAlgebra.hpp"
 
 
+const packed_determinant_inverse_function_t PACKED_DETERMINANT_INVERSE[] = {
+        packed_determinant_inverse_1,
+        packed_determinant_inverse_2,
+        packed_determinant_inverse_3,
+        packed_determinant_inverse_4,
+        packed_determinant_inverse_5,
+};
+
+
+const packed_kinetic_trace_function_t PACKED_KINETIC_TRACE[] = {
+        packed_kinetic_trace_1,
+        packed_kinetic_trace_2,
+        packed_kinetic_trace_3,
+        packed_kinetic_trace_4,
+        packed_kinetic_trace_5,
+};
+
+
+const packed_quadratic_form_function_t PACKED_QUADRATIC_FORM[] = {
+        packed_quadratic_form_1,
+        packed_quadratic_form_2,
+        packed_quadratic_form_3,
+        packed_quadratic_form_4,
+        packed_quadratic_form_5,
+};
+
+
+const packed_permutation_conjugate_function_t PACKED_PERMUTATION_CONJUGATE[] = {
+        packed_permutation_conjugate_1,
+        packed_permutation_conjugate_2,
+        packed_permutation_conjugate_3,
+        packed_permutation_conjugate_4,
+        packed_permutation_conjugate_5,
+};
+
+
 double packed_determinant_inverse_1(
         const double *__restrict__ x, double *__restrict__ y) noexcept {
     const double det = x[0];
