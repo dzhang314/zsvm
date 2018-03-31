@@ -33,12 +33,12 @@ namespace dznl {
         const std::size_t n = particles.size();
         if (permutation.size() != n) {
             throw std::invalid_argument(
-                    "is_invariant_permutation received particle and "
+                    "count_changes received particle and "
                     "permutation vectors of different sizes");
         }
         std::size_t count = 0;
         for (std::size_t i = 0; i < n; ++i) {
-            if (particles[i].type_id != particles[permutation[i]].type_id) {
+            if (particles[i].spin != particles[permutation[i]].spin) {
                 ++count;
             }
         }

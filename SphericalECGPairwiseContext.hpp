@@ -51,6 +51,8 @@ namespace zsvm {
             return result;
         }
 
+    public:
+
         explicit SphericalECGPairwiseContext(
                 long long int space_dimension,
                 const std::vector<Particle> &particles,
@@ -59,7 +61,7 @@ namespace zsvm {
                   adjusted_carrier_values(extract_adjusted_carrier_values(
                           space_dimension, particles, pairwise_potential)) {}
 
-        double evaluate_kernel(const double *__restrict__ d) {
+        double evaluate_kernel(const double *__restrict__ d) const noexcept {
             double result = 0.0;
             for (std::size_t i = 0, k = 0; i < num_particles - 1; ++i) {
                 for (std::size_t j = i + 1; j < num_particles; ++j, ++k) {

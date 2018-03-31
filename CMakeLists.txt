@@ -29,7 +29,6 @@ add_executable(zsvm
         SphericalECGPairwiseContext.hpp
         SphericalECGOverlapContext.hpp
         AmoebaOptimizer.hpp
-        AmoebaOptimizer.cpp
         ScriptToken.hpp
         ScriptToken.cpp
         ScriptTokenizer.hpp

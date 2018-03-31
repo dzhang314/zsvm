@@ -11,11 +11,13 @@ namespace zsvm {
 
     class SphericalECGConfiningContext { // TODO
 
-        explicit SphericalECGConfiningContext(
-                const std::vector<Particle> &particles,
-                const ConfiningPotential &confining_potential) {}
+    public:
 
-        double evaluate_kernel() {
+        explicit SphericalECGConfiningContext(
+                const std::vector<Particle> &,
+                const ConfiningPotential &) {}
+
+        double evaluate_kernel() const noexcept {
             return 0.0;
         }
 
