@@ -2,20 +2,22 @@
 #define ZSVM_PARTICLE_HPP_INCLUDED
 
 // C++ standard library headers
-#include <iostream> // for std::ostream
-#include <map> // for std::map
-#include <string> // for std::string
+#include <map>
+#include <utility> // for std::move
+#include <string>
 
 namespace zsvm {
 
+    template <typename T>
     struct Particle {
 
         const std::size_t type_id;
         const int spin;
-        const std::map<std::string, double> carriers;
+        const std::map<std::string, T> carriers;
 
         Particle(std::size_t type_id, int spin,
-                 const std::map<std::string, double> &carriers);
+                 std::map<std::string, T> carriers) :
+                type_id(type_id), spin(spin), carriers(std::move(carriers)) {}
 
     }; // struct Particle
 

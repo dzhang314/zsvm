@@ -14,8 +14,8 @@ namespace zsvm {
     public:
 
         explicit SphericalECGConfiningContext(
-                const std::vector<Particle> &,
-                const ConfiningPotential &) {}
+                const std::vector<zsvm::Particle<double>> &,
+                const ConfiningPotential<double> &) {}
 
         double evaluate_kernel() const noexcept {
             return 0.0;

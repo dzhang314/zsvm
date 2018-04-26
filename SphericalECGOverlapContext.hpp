@@ -43,8 +43,9 @@ namespace zsvm {
         static std::vector<SphericalECGDispersionContext>
         extract_dispersion_contexts(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const std::map<std::string, DispersionRelation> &dispersion_relations) {
+                const std::vector<Particle<double>> &particles,
+                const std::map<std::string, DispersionRelation<double>> &
+                dispersion_relations) {
             std::vector<SphericalECGDispersionContext> contexts;
             for (const auto &pair : dispersion_relations) {
                 contexts.emplace_back(space_dimension, particles, pair.second);
@@ -62,8 +63,9 @@ namespace zsvm {
         static std::vector<SphericalECGPairwiseContext>
         extract_pairwise_contexts(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const std::map<std::string, PairwisePotential> &pairwise_potentials) {
+                const std::vector<Particle<double>> &particles,
+                const std::map<std::string, PairwisePotential<double>> &
+                pairwise_potentials) {
             std::vector<SphericalECGPairwiseContext> contexts;
             for (const auto &pair : pairwise_potentials) {
                 contexts.emplace_back(space_dimension, particles, pair.second);
@@ -72,7 +74,7 @@ namespace zsvm {
         }
 
         static std::vector<bool> extract_permutation_signatures(
-                const std::vector<Particle> &particles,
+                const std::vector<Particle<double>> &particles,
                 const std::vector<std::vector<std::size_t>> &permutations) {
             std::vector<bool> signatures;
             for (const auto &permutation : permutations) {
@@ -87,7 +89,7 @@ namespace zsvm {
         const long long int space_dimension;
         const std::size_t num_particles;
         const std::size_t num_parameters;
-        packed_determinant_inverse_function_t packed_determinant_inverse;
+        packed_determinant_inverse_function<double> packed_determinant_inverse;
         std::vector<double> a;
         std::vector<double> b;
         std::vector<double> c;
@@ -103,15 +105,18 @@ namespace zsvm {
 
         explicit SphericalECGOverlapContext(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const std::map<std::string, DispersionRelation> &dispersion_relations,
-                const std::map<std::string, ConfiningPotential> &,
-                const std::map<std::string, PairwisePotential> &pairwise_potentials)
+                const std::vector<Particle<double>> &particles,
+                const std::map<std::string, DispersionRelation<double>> &
+                dispersion_relations,
+                const std::map<std::string, ConfiningPotential<double>> &,
+                const std::map<std::string, PairwisePotential<double>> &
+                pairwise_potentials)
                 : space_dimension(space_dimension),
                   num_particles(particles.size()),
                   num_parameters(particles.size() * (particles.size() + 1) / 2),
                   packed_determinant_inverse(
-                          PACKED_DETERMINANT_INVERSE[num_particles - 1]),
+                          PACKED_DETERMINANT_INVERSE<double>[num_particles -
+                                                             1]),
                   a(num_parameters),
                   b(num_parameters),
                   c(num_parameters),

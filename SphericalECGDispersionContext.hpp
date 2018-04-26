@@ -13,12 +13,12 @@ namespace zsvm {
     class SphericalECGDispersionContext {
 
         const std::vector<double> adjusted_carrier_values;
-        const packed_kinetic_trace_function_t packed_kinetic_trace;
+        const packed_kinetic_trace_function<double> packed_kinetic_trace;
 
         static std::vector<double> extract_adjusted_carrier_values(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const DispersionRelation &dispersion_relation) {
+                const std::vector<zsvm::Particle<double>> &particles,
+                const DispersionRelation<double> &dispersion_relation) {
             std::vector<double> result;
             const std::string &carrier_name = dispersion_relation.carrier;
             for (const auto &particle : particles) {
@@ -39,12 +39,12 @@ namespace zsvm {
 
         explicit SphericalECGDispersionContext(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const DispersionRelation &dispersion_relation)
+                const std::vector<zsvm::Particle<double>> &particles,
+                const DispersionRelation<double> &dispersion_relation)
                 : adjusted_carrier_values(extract_adjusted_carrier_values(
                 space_dimension, particles, dispersion_relation)),
                   packed_kinetic_trace(
-                          PACKED_KINETIC_TRACE[particles.size() - 1]) {}
+                          PACKED_KINETIC_TRACE<double>[particles.size() - 1]) {}
 
         double evaluate_kernel(const double *__restrict__ a,
                                const double *__restrict__ b,

@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "EnumTypes.hpp"
 #include "Particle.hpp"
+#include "EnumTypes.hpp"
 #include "PackedLinearAlgebra.hpp"
 
 namespace zsvm {
@@ -18,8 +18,8 @@ namespace zsvm {
 
         static std::vector<double> extract_adjusted_carrier_values(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const PairwisePotential &pairwise_potential) {
+                const std::vector<zsvm::Particle<double>> &particles,
+                const PairwisePotential<double> &pairwise_potential) {
             std::vector<double> result;
             const std::string &carrier_name = pairwise_potential.carrier;
             const std::size_t n = particles.size();
@@ -55,8 +55,8 @@ namespace zsvm {
 
         explicit SphericalECGPairwiseContext(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const PairwisePotential &pairwise_potential)
+                const std::vector<zsvm::Particle<double>> &particles,
+                const PairwisePotential<double> &pairwise_potential)
                 : num_particles(particles.size()),
                   adjusted_carrier_values(extract_adjusted_carrier_values(
                           space_dimension, particles, pairwise_potential)) {}

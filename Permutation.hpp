@@ -12,8 +12,10 @@
 
 namespace dznl {
 
-    bool is_invariant_permutation(const std::vector<zsvm::Particle> &particles,
-                                  const std::vector<std::size_t> &permutation) {
+    template <typename T>
+    bool is_invariant_permutation(
+            const std::vector<zsvm::Particle<T>> &particles,
+            const std::vector<std::size_t> &permutation) {
         const std::size_t n = particles.size();
         if (permutation.size() != n) {
             throw std::invalid_argument(
@@ -28,7 +30,8 @@ namespace dznl {
         return true;
     }
 
-    std::size_t count_changes(const std::vector<zsvm::Particle> &particles,
+    template <typename T>
+    std::size_t count_changes(const std::vector<zsvm::Particle<T>> &particles,
                               const std::vector<std::size_t> &permutation) {
         const std::size_t n = particles.size();
         if (permutation.size() != n) {
@@ -56,8 +59,9 @@ namespace dznl {
         return count;
     }
 
+    template <typename T>
     std::vector<std::vector<std::size_t>> invariant_permutations(
-            const std::vector<zsvm::Particle> &particles) {
+            const std::vector<zsvm::Particle<T>> &particles) {
         const std::size_t n = particles.size();
         std::vector<std::size_t> permutation(n);
         for (std::size_t i = 0; i < n; ++i) { permutation[i] = i; }

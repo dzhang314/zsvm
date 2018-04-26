@@ -9,6 +9,8 @@
 #include <vector>
 #include <random>
 
+#include <omp.h>
+
 // Project-specific headers
 #include "EnumTypes.hpp"
 #include "Particle.hpp"
@@ -16,6 +18,7 @@
 #include "AmoebaOptimizer.hpp"
 #include "ScriptParser.hpp"
 #include "SphericalECGOverlapContext.hpp"
+#include "SphericalECGJacobiContext.hpp"
 
 #define PRINT_EXECUTION_TIME(...) do { \
     ::std::chrono::high_resolution_clock::time_point __start_time = \
@@ -44,10 +47,13 @@ namespace zsvm {
 
         explicit SphericalECGVariationalOptimizer(
                 long long int space_dimension,
-                const std::vector<Particle> &particles,
-                const std::map<std::string, DispersionRelation> &dispersion_relations,
-                const std::map<std::string, ConfiningPotential> &confining_potentials,
-                const std::map<std::string, PairwisePotential> &pairwise_potentials)
+                const std::vector<Particle<double>> &particles,
+                const std::map<std::string, DispersionRelation<double>> &
+                dispersion_relations,
+                const std::map<std::string, ConfiningPotential<double>> &
+                confining_potentials,
+                const std::map<std::string, PairwisePotential<double>> &
+                pairwise_potentials)
                 : num_particles(particles.size()),
                   num_parameters(num_particles * (num_particles + 1) / 2),
                   context(space_dimension, particles, dispersion_relations,
@@ -162,8 +168,6 @@ namespace zsvm {
                 const double new_energy = refine_amoeba(
                         new_basis_element.data(), initial_step_size, max_steps);
                 if (new_energy < best_energy) {
-                    std::cout << "Improved energy to "
-                              << new_energy << std::endl;
                     best_basis_element = new_basis_element;
                     best_energy = new_energy;
                 }
@@ -221,6 +225,166 @@ namespace zsvm {
         }
 
     }; // class SphericalECGVariationalOptimizer
+
+} // namespace zsvm
+
+
+namespace zsvm {
+
+    class SphericalECGJacobiVariationalOptimizer {
+
+    public:
+
+        const std::size_t num_particles;
+        const std::size_t num_parameters;
+        SphericalECGJacobiContext<double> context;
+        RealVariationalSolver solver;
+        std::vector<std::vector<double>> basis;
+        std::vector<std::vector<double>> basis_matrices;
+
+        explicit SphericalECGJacobiVariationalOptimizer(
+                long long int space_dimension,
+                const std::vector<Particle<double>> &particles,
+                const std::string &mass_carrier,
+                const std::string &charge_carrier)
+                : num_particles(particles.size()),
+                  num_parameters(num_particles * (num_particles - 1) / 2),
+                  context(SphericalECGJacobiContext<double>::create(
+                          particles, mass_carrier, charge_carrier,
+                          space_dimension)) {}
+
+        double get_ground_state_energy() {
+            return solver.get_eigenvalue(0);
+        }
+
+    public: // =================================================================
+
+        double augmented_ground_state_energy(
+                const double *__restrict__ new_basis_matrix) {
+            if (solver.empty()) {
+                double overlap_element, hamiltonian_element;
+                context.evaluate_matrix_elements(
+                        overlap_element, hamiltonian_element,
+                        new_basis_matrix, new_basis_matrix);
+                return hamiltonian_element / overlap_element;
+            } else {
+                const std::size_t basis_size = basis_matrices.size();
+                std::vector<double> new_overlap_column(basis_size + 1);
+                std::vector<double> new_hamiltonian_column(basis_size + 1);
+                for (std::size_t i = 0; i < basis_size; ++i) {
+                    context.evaluate_matrix_elements(
+                            new_overlap_column[i], new_hamiltonian_column[i],
+                            basis_matrices[i].data(), new_basis_matrix);
+                }
+                context.evaluate_matrix_elements(
+                        new_overlap_column[basis_size],
+                        new_hamiltonian_column[basis_size],
+                        new_basis_matrix, new_basis_matrix);
+                return solver.minimum_augmented_eigenvalue(
+                        new_overlap_column.data(),
+                        new_hamiltonian_column.data());
+            }
+        }
+
+        static std::mt19937_64 properly_seeded_random_engine() {
+            std::array<std::mt19937_64::result_type,
+                    std::mt19937_64::state_size> random_data;
+            std::random_device source;
+            std::generate(random_data.begin(), random_data.end(),
+                          std::ref(source));
+            random_data[0] = static_cast<std::mt19937_64::result_type>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch()
+                    ).count());
+            std::seed_seq seeds(random_data.begin(), random_data.end());
+            return std::mt19937_64(seeds);
+        }
+
+        void random_basis_element(double *__restrict__ basis_element) {
+            static std::mt19937_64 random_engine = properly_seeded_random_engine();
+            static std::normal_distribution<double>
+                    correlation_distribution(0.0, 3.0);
+            for (std::size_t i = 0; i < num_parameters; ++i) {
+                basis_element[i] = correlation_distribution(random_engine);
+            }
+        }
+
+        void construct_basis_matrix(
+                double *__restrict__ basis_matrix,
+                const double *__restrict__ basis_element) {
+            context.gaussian_parameter_matrix(basis_element, basis_matrix);
+        }
+
+        void expand_amoeba(std::size_t num_trials,
+                           double initial_step_size,
+                           std::size_t max_steps) {
+            std::vector<double> new_basis_element(num_parameters);
+            std::vector<double> best_basis_element;
+            double best_energy = solver.empty()
+                                 ? std::numeric_limits<double>::max()
+                                 : solver.get_eigenvalue(0);
+            for (std::size_t trial = 0; trial < num_trials; ++trial) {
+                random_basis_element(new_basis_element.data());
+                const double new_energy = refine_amoeba(
+                        new_basis_element.data(), initial_step_size, max_steps);
+                if (new_energy < best_energy) {
+                    best_basis_element = new_basis_element;
+                    best_energy = new_energy;
+                }
+            }
+            if (!best_basis_element.empty()) {
+                basis.push_back(best_basis_element);
+                std::vector<double> best_basis_matrix(num_parameters);
+                construct_basis_matrix(best_basis_matrix.data(),
+                                       best_basis_element.data());
+                basis_matrices.push_back(best_basis_matrix);
+                recompute_solver_matrices();
+            }
+        }
+
+    public: // =================================================================
+
+        double refine_amoeba(double *__restrict__ basis_element,
+                             double initial_step_size,
+                             std::size_t max_steps) {
+            std::vector<double> basis_matrix(num_parameters);
+            dznl::AmoebaOptimizer amoeba(
+                    basis_element, num_parameters, initial_step_size,
+                    [&](const double *b) {
+                        construct_basis_matrix(basis_matrix.data(), b);
+                        return augmented_ground_state_energy(
+                                basis_matrix.data());
+                    });
+            for (std::size_t step = 0; step < max_steps; ++step) {
+                amoeba.step();
+            }
+            return amoeba.current_minimum(basis_element);
+        }
+
+        void recompute_basis_matrices() {
+            basis_matrices.clear();
+            for (const auto &basis_element : basis) {
+                std::vector<double> basis_matrix(num_parameters);
+                construct_basis_matrix(basis_matrix.data(),
+                                       basis_element.data());
+                basis_matrices.push_back(basis_matrix);
+            }
+        }
+
+        void recompute_solver_matrices() {
+            solver.set_basis_size_destructive(basis_matrices.size());
+            for (std::size_t i = 0; i < basis_matrices.size(); ++i) {
+                for (std::size_t j = 0; j < basis_matrices.size(); ++j) {
+                    context.evaluate_matrix_elements(
+                            solver.overlap_matrix_element(i, j),
+                            solver.hamiltonian_matrix_element(i, j),
+                            basis_matrices[i].data(),
+                            basis_matrices[j].data());
+                }
+            }
+        }
+
+    }; // class SphericalECGJacobiVariationalOptimizer
 
 } // namespace zsvm
 
@@ -331,6 +495,34 @@ namespace zsvm {
     }
 
 
+    std::size_t get_unsigned_parameter(
+            const ScriptCommand &command, const std::string &param_name) {
+        const auto &words = command.get_words();
+        const auto &params = command.get_named_parameters();
+        const auto token_iter = params.find(param_name);
+        if (token_iter == params.end()) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " lacks required named parameter \"" << param_name
+                      << "\", which is expected to be an non-negative integer."
+                      << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        const ScriptToken &token = token_iter->second;
+        if (token.type != ScriptToken::Type::INTEGER
+            || token.integer_value < 0) {
+            std::cerr << "ERROR: Command";
+            for (const auto &word : words) { std::cerr << ' ' << word; }
+            std::cerr << " given invalid value " << token
+                      << " for required named parameter \"" << param_name
+                      << "\", which is expected to be am non-negative integer."
+                      << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        return static_cast<std::size_t>(token.integer_value);
+    }
+
+
     const std::string &get_string_parameter(
             const ScriptCommand &command, const std::string &param_name) {
         const auto &words = command.get_words();
@@ -402,10 +594,10 @@ namespace zsvm {
         std::optional<long long int> space_dimension;
         std::map<std::string, std::tuple<std::size_t, ExchangeStatistics, int>>
                 particle_types; // name -> (ID, exchange statistics, spin)
-        std::map<std::string, DispersionRelation> dispersion_relations;
-        std::map<std::string, ConfiningPotential> confining_potentials;
-        std::map<std::string, PairwisePotential> pairwise_potentials;
-        std::vector<Particle> particles;
+        std::map<std::string, DispersionRelation<double>> dispersion_relations;
+        std::map<std::string, ConfiningPotential<double>> confining_potentials;
+        std::map<std::string, PairwisePotential<double>> pairwise_potentials;
+        std::vector<Particle<double>> particles;
         std::vector<std::vector<double>> basis;
         std::vector<std::vector<double>> basis_matrices;
 
@@ -535,7 +727,7 @@ namespace zsvm {
                 std::exit(EXIT_FAILURE);
             }
             const ExchangeStatistics stat_value(get_enum_parameter(
-                    command, "statistics", ExchangeStatistics::MAP));
+                    command, "statistics", ExchangeStatistics::map()));
             const std::size_t id = particle_types.size();
             particle_types.insert({name_value,
                                    std::tie(id, stat_value, spin_value)});
@@ -550,13 +742,13 @@ namespace zsvm {
             // Precondition: command has at least two words, and
             // the first two words are <DECLARE> <DISPERSION_RELATION>.
             const std::string &name = get_unique_identifier(command);
-            const DispersionRelation::Type type = get_enum_parameter(
-                    command, "interaction", DispersionRelation::MAP);
+            const DispersionRelation<double>::Type type = get_enum_parameter(
+                    command, "interaction", DispersionRelation<double>::map());
             const double strength = get_double_parameter(command, "strength");
             const double exponent = get_double_parameter(command, "exponent");
             const std::string &carrier =
                     get_string_parameter(command, "carrier");
-            const DispersionRelation dispersion_relation(
+            const DispersionRelation<double> dispersion_relation(
                     type, strength, exponent, carrier);
             dispersion_relations.insert({name, dispersion_relation});
             // TODO: Print dispersion relation type.
@@ -570,13 +762,13 @@ namespace zsvm {
             // Precondition: command has at least two words, and
             // the first two words are <DECLARE> <CONFINING_POTENTIAL>.
             const std::string &name = get_unique_identifier(command);
-            const ConfiningPotential::Type type = get_enum_parameter(
-                    command, "interaction", ConfiningPotential::MAP);
+            const ConfiningPotential<double>::Type type = get_enum_parameter(
+                    command, "interaction", ConfiningPotential<double>::map());
             const double strength = get_double_parameter(command, "strength");
             const double exponent = get_double_parameter(command, "exponent");
             const std::string &carrier =
                     get_string_parameter(command, "carrier");
-            const ConfiningPotential confining_potential(
+            const ConfiningPotential<double> confining_potential(
                     type, strength, exponent, carrier);
             confining_potentials.insert({name, confining_potential});
             // TODO: Print confining potential type.
@@ -590,13 +782,13 @@ namespace zsvm {
             // Precondition: command has at least two words, and
             // the first two words are <DECLARE> <PAIRWISE_POTENTIAL>.
             const std::string &name = get_unique_identifier(command);
-            const PairwisePotential::Type type = get_enum_parameter(
-                    command, "interaction", PairwisePotential::MAP);
+            const PairwisePotential<double>::Type type = get_enum_parameter(
+                    command, "interaction", PairwisePotential<double>::map());
             const double strength = get_double_parameter(command, "strength");
             const double exponent = get_double_parameter(command, "exponent");
             const std::string &carrier =
                     get_string_parameter(command, "carrier");
-            const PairwisePotential pairwise_potential(
+            const PairwisePotential<double> pairwise_potential(
                     type, strength, exponent, carrier);
             pairwise_potentials.insert({name, pairwise_potential});
             // TODO: Print pairwise potential type.
@@ -606,7 +798,30 @@ namespace zsvm {
                       << ", and carrier \"" << carrier << "\"." << std::endl;
         }
 
-        void expand_basis(const ScriptCommand &) {
+        bool is_jacobi_reducible() {
+            if (dispersion_relations.size() != 1
+                || !confining_potentials.empty()
+                || pairwise_potentials.size() != 1) {
+                return false;
+            }
+            const auto &dispersion = dispersion_relations.begin()->second;
+            if (dispersion.type !=
+                DispersionRelation<double>::Type::RADIAL_POWER_LAW
+                || dispersion.strength != 0.5
+                || dispersion.exponent != 2) {
+                return false;
+            }
+            const auto &pairwise = pairwise_potentials.begin()->second;
+            if (pairwise.type !=
+                PairwisePotential<double>::Type::RADIAL_POWER_LAW
+                || pairwise.exponent != -1
+                || pairwise.strength != 1.0) {
+                return false;
+            }
+            return true;
+        }
+
+        void expand_basis(const ScriptCommand &command) {
             // Precondition: command has at least two words, and
             // the first two words are <EXPAND> <BASIS>.
             if (!space_dimension.has_value()) {
@@ -625,12 +840,77 @@ namespace zsvm {
                           << "declared. Physically nonsensical results may be "
                           << "produced." << std::endl;
             }
-            SphericalECGVariationalOptimizer optimizer(
-                    *space_dimension, particles, dispersion_relations,
-                    confining_potentials, pairwise_potentials);
-            for (int i = 0; i < 200; ++i) {
-                optimizer.expand_amoeba(100, 1.0, 100);
-                std::cout << optimizer.get_ground_state_energy() << std::endl;
+            const std::size_t target_size =
+                    get_unsigned_parameter(command, "target_size");
+            const std::size_t trials =
+                    get_unsigned_parameter(command, "trials");
+            const std::size_t max_iterations =
+                    get_unsigned_parameter(command, "max_iterations");
+            const std::size_t num_requested_threads =
+                    get_unsigned_parameter(command, "num_threads");
+            omp_set_num_threads(static_cast<int>(num_requested_threads));
+            if (is_jacobi_reducible()) {
+                std::cout << "Using Jacobi coordinates to reduce dimension.\n";
+
+                std::size_t num_threads = 1;
+#pragma omp parallel
+                {
+                    if (omp_get_thread_num() == 0) {
+                        num_threads = (std::size_t) omp_get_num_threads();
+                    }
+                }
+                if (num_threads == 1) {
+                    std::cout << "Performing serial basis expansion.\n";
+                } else {
+                    std::cout << "Performing basis expansion using "
+                              << num_threads << " threads.\n";
+                }
+
+                std::chrono::high_resolution_clock::time_point start =
+                        std::chrono::high_resolution_clock::now();
+                std::vector<std::vector<double>> best_basis;
+                std::vector<std::vector<std::vector<double>>>
+                        thread_bases(num_threads);
+                std::vector<double> thread_energies(num_threads);
+                for (std::size_t i = 0; i < target_size; ++i) {
+#pragma omp parallel
+                    {
+                        SphericalECGJacobiVariationalOptimizer optimizer(
+                                *space_dimension, particles,
+                                dispersion_relations.begin()->second.carrier,
+                                pairwise_potentials.begin()->second.carrier);
+                        optimizer.basis = best_basis;
+                        optimizer.recompute_basis_matrices();
+                        optimizer.recompute_solver_matrices();
+                        optimizer.expand_amoeba(trials / num_threads,
+                                                1.0, max_iterations);
+                        thread_bases[omp_get_thread_num()] = optimizer.basis;
+                        thread_energies[omp_get_thread_num()] =
+                                optimizer.get_ground_state_energy();
+                    }
+                    std::size_t min_index = static_cast<std::size_t>(
+                            std::min_element(thread_energies.begin(),
+                                             thread_energies.end()) -
+                            thread_energies.begin());
+                    best_basis = thread_bases[min_index];
+                    std::cout << i << '\t' << thread_energies[min_index]
+                              << std::endl;
+                }
+                std::chrono::high_resolution_clock::time_point stop =
+                        std::chrono::high_resolution_clock::now();
+                std::cout << "Time elapsed (seconds): "
+                          << std::chrono::duration_cast<
+                                  std::chrono::milliseconds>(
+                                  stop - start).count() / 1000.0 << std::endl;
+            } else {
+                SphericalECGVariationalOptimizer optimizer(
+                        *space_dimension, particles, dispersion_relations,
+                        confining_potentials, pairwise_potentials);
+                for (std::size_t i = 0; i < target_size; ++i) {
+                    optimizer.expand_amoeba(trials, 1.0, max_iterations);
+                    std::cout << optimizer.get_ground_state_energy()
+                              << std::endl;
+                }
             }
         }
 
@@ -709,10 +989,23 @@ namespace zsvm {
 } // namespace zsvm
 
 
-int main() {
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        std::cout << "Usage: " << argv[0] << " SCRIPT_FILE" << std::endl;
+        return 1;
+    }
+    std::string script_file_name(argv[1]);
+    {
+        std::ifstream script_file(script_file_name);
+        if (!script_file.good()) {
+            std::cout << "Error: could not open script file "
+                      << script_file_name << "." << std::endl;
+            return 2;
+        }
+    }
     std::cout << std::scientific;
     std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
-    zsvm::ScriptInterpreter interpreter("../example_script.zscr");
+    zsvm::ScriptInterpreter interpreter(script_file_name);
     interpreter.run();
     return 0;
 }

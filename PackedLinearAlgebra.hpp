@@ -1,100 +1,65 @@
 #ifndef ZSVM_PACKED_LINEAR_ALGEBRA_HPP_INCLUDED
 #define ZSVM_PACKED_LINEAR_ALGEBRA_HPP_INCLUDED
 
-typedef double (*packed_determinant_inverse_function_t)(
-        const double *__restrict__ x, double *__restrict__ y);
+#include "PackedLinearAlgebraImpl.hpp"
 
-typedef double (*packed_kinetic_trace_function_t)(
-        const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m);
+// CLion does not understand how to format function type alias declarations.
+// @formatter:off
 
-typedef double (*packed_quadratic_form_function_t)(
-        const double *__restrict__ x, const double *__restrict__ v);
+template <typename T>
+using packed_determinant_inverse_function = T (*)(
+        const T *__restrict__ x, T *__restrict__ y);
 
-typedef void (*packed_permutation_conjugate_function_t)(
-        const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y);
+template <typename T>
+using packed_kinetic_trace_function = T (*)(
+        const T *__restrict__ a, const T *__restrict__ b,
+        const T *__restrict__ c, const T *__restrict__ m);
 
-extern const packed_determinant_inverse_function_t
-        PACKED_DETERMINANT_INVERSE[];
+template <typename T>
+using packed_quadratic_form_function = double (*)(
+        const T *__restrict__ x, const T *__restrict__ v);
 
-extern const packed_kinetic_trace_function_t
-        PACKED_KINETIC_TRACE[];
+template <typename T>
+using packed_permutation_conjugate_function = void (*)(
+        const T *__restrict__ x, const T *__restrict__ p,
+        T *__restrict__ y);
 
-extern const packed_quadratic_form_function_t
-        PACKED_QUADRATIC_FORM[];
+// @formatter:on
 
-extern const packed_permutation_conjugate_function_t
-        PACKED_PERMUTATION_CONJUGATE[];
+template <typename T>
+const packed_determinant_inverse_function<T> PACKED_DETERMINANT_INVERSE[] = {
+        packed_determinant_inverse_1<T>,
+        packed_determinant_inverse_2<T>,
+        packed_determinant_inverse_3<T>,
+        packed_determinant_inverse_4<T>,
+        packed_determinant_inverse_5<T>,
+};
 
-double packed_determinant_inverse_1(
-        const double *__restrict__ x, double *__restrict__ y) noexcept;
+template <typename T>
+const packed_kinetic_trace_function<T> PACKED_KINETIC_TRACE[] = {
+        packed_kinetic_trace_1<T>,
+        packed_kinetic_trace_2<T>,
+        packed_kinetic_trace_3<T>,
+        packed_kinetic_trace_4<T>,
+        packed_kinetic_trace_5<T>,
+};
 
-double packed_kinetic_trace_1(
-        const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) noexcept;
+template <typename T>
+const packed_quadratic_form_function<T> PACKED_QUADRATIC_FORM[] = {
+        packed_quadratic_form_1<T>,
+        packed_quadratic_form_2<T>,
+        packed_quadratic_form_3<T>,
+        packed_quadratic_form_4<T>,
+        packed_quadratic_form_5<T>,
+};
 
-double packed_quadratic_form_1(
-        const double *__restrict__ x, const double *__restrict__ v) noexcept;
-
-void packed_permutation_conjugate_1(
-        const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) noexcept;
-
-double packed_determinant_inverse_2(
-        const double *__restrict__ x, double *__restrict__ y) noexcept;
-
-double packed_kinetic_trace_2(
-        const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) noexcept;
-
-double packed_quadratic_form_2(
-        const double *__restrict__ x, const double *__restrict__ v) noexcept;
-
-void packed_permutation_conjugate_2(
-        const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) noexcept;
-
-double packed_determinant_inverse_3(
-        const double *__restrict__ x, double *__restrict__ y) noexcept;
-
-double packed_kinetic_trace_3(
-        const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) noexcept;
-
-double packed_quadratic_form_3(
-        const double *__restrict__ x, const double *__restrict__ v) noexcept;
-
-void packed_permutation_conjugate_3(
-        const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) noexcept;
-
-double packed_determinant_inverse_4(
-        const double *__restrict__ x, double *__restrict__ y) noexcept;
-
-double packed_kinetic_trace_4(
-        const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) noexcept;
-
-double packed_quadratic_form_4(
-        const double *__restrict__ x, const double *__restrict__ v) noexcept;
-
-void packed_permutation_conjugate_4(
-        const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) noexcept;
-
-double packed_determinant_inverse_5(
-        const double *__restrict__ x, double *__restrict__ y) noexcept;
-
-double packed_kinetic_trace_5(
-        const double *__restrict__ a, const double *__restrict__ b,
-        const double *__restrict__ c, const double *__restrict__ m) noexcept;
-
-double packed_quadratic_form_5(
-        const double *__restrict__ x, const double *__restrict__ v) noexcept;
-
-void packed_permutation_conjugate_5(
-        const double *__restrict__ x, const double *__restrict__ p,
-        double *__restrict__ y) noexcept;
+template <typename T>
+const packed_permutation_conjugate_function<T> PACKED_PERMUTATION_CONJUGATE[] = {
+        packed_permutation_conjugate_1<T>,
+        packed_permutation_conjugate_2<T>,
+        packed_permutation_conjugate_3<T>,
+        packed_permutation_conjugate_4<T>,
+        packed_permutation_conjugate_5<T>,
+};
 
 #endif // ZSVM_PACKED_LINEAR_ALGEBRA_HPP_INCLUDED

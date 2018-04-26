@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8)
 project(zsvm)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,27 +7,22 @@ add_definitions(-DEIGEN_NO_DEBUG=1)
 
 add_compile_options(
         -Wall -Wextra -pedantic -Werror -pedantic-errors
-        -O3 -march=native -mtune=native)
-
-set_source_files_properties(PackedLinearAlgebra.cpp
-        PROPERTIES COMPILE_FLAGS -ffast-math)
+        -O3 -march=native -mtune=native -fopenmp)
 
 add_executable(zsvm
         EnumTypes.hpp
-        EnumTypes.cpp
         Particle.hpp
-        Particle.cpp
         Permutation.hpp
         JacobiCoordinates.hpp
-        JacobiCoordinates.cpp
         PackedLinearAlgebra.hpp
-        PackedLinearAlgebra.cpp
+        PackedLinearAlgebraImpl.hpp
         RealVariationalSolver.hpp
         RealVariationalSolver.cpp
         SphericalECGDispersionContext.hpp
         SphericalECGConfiningContext.hpp
         SphericalECGPairwiseContext.hpp
         SphericalECGOverlapContext.hpp
+        SphericalECGJacobiContext.hpp
         AmoebaOptimizer.hpp
         ScriptToken.hpp
         ScriptToken.cpp
@@ -38,3 +33,7 @@ add_executable(zsvm
         ScriptParser.hpp
         ScriptParser.cpp
         main.cpp)
+
+find_package(OpenMP)
+target_link_libraries(zsvm ${OpenMP_CXX_LIBRARIES} ${PROJECT_LINK_LIBS})
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")

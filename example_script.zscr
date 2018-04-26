@@ -12,8 +12,9 @@ declare pairwise_potential coulomb (
     exponent = -1, strength = 1.0);
 
 add particle (type = electron, spin = +0.5, mass = 1.0, charge = -1.0);
-add particle (type = electron, spin = -0.5, mass = 1.0, charge = -1.0);
-add particle (type = positron, spin = -0.5, mass = 1.0, charge = +1.0);
+# add particle (type = electron, spin = -0.5, mass = 1.0, charge = -1.0);
+add particle (type = positron, spin = +0.5, mass = 1.0, charge = +1.0);
+# add particle (type = positron, spin = -0.5, mass = 1.0, charge = +1.0);
 
-expand basis (method = amoeba, target_size = 100, trials = 100, max_iterations = 200);
-refine basis (method = amoeba, cycles = 10,       trials = 10, max_iterations = 200);
+expand basis (method = amoeba, target_size = 20,
+              trials = 100, max_iterations = 200, num_threads = 1);

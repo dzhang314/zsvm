@@ -1,8 +1,9 @@
 #ifndef ZSVM_ENUM_TYPES_HPP_INCLUDED
 #define ZSVM_ENUM_TYPES_HPP_INCLUDED
 
-#include <map> // for std::map
-#include <string> // for std::string
+// C++ standard library headers
+#include <map>
+#include <string>
 
 namespace zsvm {
 
@@ -14,12 +15,22 @@ namespace zsvm {
 
         const Type type;
 
-        explicit ExchangeStatistics(Type type) noexcept;
+        explicit ExchangeStatistics(Type type) noexcept
+                : type(type) {}
 
-        static const std::map<std::string, Type> MAP;
+        static const std::map<std::string, Type> &map() {
+            static const std::map<std::string, Type> MAP{
+                    {"boson",           Type::BOSON},
+                    {"fermion",         Type::FERMION},
+                    {"none",            Type::DISTINGUISHABLE},
+                    {"distinguishable", Type::DISTINGUISHABLE},
+            };
+            return MAP;
+        };
 
     }; // struct ExchangeStatistics
 
+    template <typename T>
     struct DispersionRelation {
 
         enum class Type {
@@ -27,18 +38,25 @@ namespace zsvm {
         }; // enum class Type
 
         const Type type;
-        const double strength;
-        const double exponent;
+        const T strength;
+        const T exponent;
         const std::string carrier;
 
         explicit DispersionRelation(
-                Type type, double strength, double exponent,
-                const std::string &carrier);
+                Type type, T strength, T exponent, std::string carrier)
+                : type(type), strength(strength),
+                  exponent(exponent), carrier(std::move(carrier)) {}
 
-        static const std::map<std::string, Type> MAP;
+        static const std::map<std::string, Type> &map() {
+            static const std::map<std::string, Type> MAP{
+                    {"radial_power_law", Type::RADIAL_POWER_LAW},
+            };
+            return MAP;
+        };
 
     }; // struct DispersionRelation
 
+    template <typename T>
     struct ConfiningPotential {
 
         enum class Type {
@@ -46,18 +64,25 @@ namespace zsvm {
         }; // enum class Type
 
         const Type type;
-        const double strength;
-        const double exponent;
+        const T strength;
+        const T exponent;
         const std::string carrier;
 
         explicit ConfiningPotential(
-                Type type, double strength, double exponent,
-                const std::string &carrier);
+                Type type, T strength, T exponent, std::string carrier)
+                : type(type), strength(strength),
+                  exponent(exponent), carrier(std::move(carrier)) {}
 
-        static const std::map<std::string, Type> MAP;
+        static const std::map<std::string, Type> &map() {
+            static const std::map<std::string, Type> MAP{
+                    {"radial_power_law", Type::RADIAL_POWER_LAW},
+            };
+            return MAP;
+        };
 
     }; // struct ConfiningPotential
 
+    template <typename T>
     struct PairwisePotential {
 
         enum class Type {
@@ -65,15 +90,21 @@ namespace zsvm {
         }; // enum class Type
 
         const Type type;
-        const double strength;
-        const double exponent;
+        const T strength;
+        const T exponent;
         const std::string carrier;
 
         explicit PairwisePotential(
-                Type type, double strength, double exponent,
-                const std::string &carrier);
+                Type type, T strength, T exponent, std::string carrier)
+                : type(type), strength(strength),
+                  exponent(exponent), carrier(std::move(carrier)) {}
 
-        static const std::map<std::string, Type> MAP;
+        static const std::map<std::string, Type> &map() {
+            static const std::map<std::string, Type> MAP{
+                    {"radial_power_law", Type::RADIAL_POWER_LAW},
+            };
+            return MAP;
+        };
 
     }; // struct PairwisePotential
 
