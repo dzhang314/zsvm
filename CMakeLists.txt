@@ -17,7 +17,6 @@ add_executable(zsvm
         PackedLinearAlgebra.hpp
         PackedLinearAlgebraImpl.hpp
         RealVariationalSolver.hpp
-        RealVariationalSolver.cpp
         SphericalECGDispersionContext.hpp
         SphericalECGConfiningContext.hpp
         SphericalECGPairwiseContext.hpp

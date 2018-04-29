@@ -6,27 +6,28 @@
 #include <cstddef> // for std::size_t
 #include <functional> // for std::function
 #include <utility> // for std::pair
-#include <vector> // for std::vector
+#include <vector>
 
 namespace dznl {
 
+    template <typename T>
     class AmoebaOptimizer {
 
     private: // =============================================== MEMBER VARIABLES
 
         const std::size_t n;
-        std::function<double(const double *)> f;
-        std::vector<std::pair<double, std::vector<double>>> x;
+        std::function<T(const T *)> f;
+        std::vector<std::pair<T, std::vector<T>>> x;
 
     public: // ===================================================== CONSTRUCTOR
 
         AmoebaOptimizer(
-                const double *initial_point,
+                const T *initial_point,
                 std::size_t num_dimensions,
-                double initial_step_size,
-                std::function<double(const double *)> objective_function)
+                T initial_step_size,
+                std::function<T(const T *)> objective_function)
                 : n(num_dimensions), f(std::move(objective_function)) {
-            std::vector<double> y(n);
+            std::vector<T> y(n);
             for (std::size_t i = 0; i < n + 1; ++i) {
                 for (std::size_t j = 0; j < n; ++j) {
                     y[j] = (i == j) ? initial_point[j] + initial_step_size
@@ -40,15 +41,15 @@ namespace dznl {
 
         void sort() {
             std::sort(x.begin(), x.end(), [](
-                    const std::pair<double, std::vector<double>> &p,
-                    const std::pair<double, std::vector<double>> &q) {
+                    const std::pair<T, std::vector<T>> &p,
+                    const std::pair<T, std::vector<T>> &q) {
                 return p.first < q.first;
             });
         }
 
     public: // ======================================================= ACCESSORS
 
-        double current_minimum(double *current_point) {
+        T current_minimum(T *current_point) {
             sort();
             for (std::size_t i = 0; i < n; ++i) {
                 current_point[i] = x[0].second[i];
@@ -58,8 +59,8 @@ namespace dznl {
 
     private: // ======================================= GEOMETRIC HELPER METHODS
 
-        std::vector<double> compute_centroid() const {
-            std::vector<double> centroid(n, 0.0);
+        std::vector<T> compute_centroid() const {
+            std::vector<T> centroid(n, 0.0);
             for (std::size_t i = 0; i < n; ++i) {
                 for (std::size_t j = 0; j < n; ++j) {
                     centroid[j] += x[i].second[j];
@@ -69,20 +70,20 @@ namespace dznl {
             return centroid;
         }
 
-        std::vector<double> compute_reflection(
-                const std::vector<double> &p,
-                const std::vector<double> &q) const {
-            std::vector<double> reflected_point(n);
+        std::vector<T> compute_reflection(
+                const std::vector<T> &p,
+                const std::vector<T> &q) const {
+            std::vector<T> reflected_point(n);
             for (std::size_t i = 0; i < n; ++i) {
                 reflected_point[i] = 2 * q[i] - p[i];
             }
             return reflected_point;
         }
 
-        std::vector<double> compute_midpoint(
-                const std::vector<double> &p,
-                const std::vector<double> &q) const {
-            std::vector<double> midpoint(n);
+        std::vector<T> compute_midpoint(
+                const std::vector<T> &p,
+                const std::vector<T> &q) const {
+            std::vector<T> midpoint(n);
             for (std::size_t i = 0; i < n; ++i) {
                 midpoint[i] = (p[i] + q[i]) / 2;
             }
@@ -91,26 +92,26 @@ namespace dznl {
 
     public: // ============================================ OPTIMIZATION METHODS
 
-        double step() {
+        T step() {
             sort();
-            const double &best_value = x[0].first;
-            const std::vector<double> &best_point = x[0].second;
-            const double &second_worst_value = x[n - 1].first;
-            double &worst_value = x[n].first;
-            std::vector<double> &worst_point = x[n].second;
-            const std::vector<double> centroid = compute_centroid();
-            const std::vector<double> reflected_point =
+            const T &best_value = x[0].first;
+            const std::vector<T> &best_point = x[0].second;
+            const T &second_worst_value = x[n - 1].first;
+            T &worst_value = x[n].first;
+            std::vector<T> &worst_point = x[n].second;
+            const std::vector<T> centroid = compute_centroid();
+            const std::vector<T> reflected_point =
                     compute_reflection(worst_point, centroid);
-            const double reflected_value = f(reflected_point.data());
+            const T reflected_value = f(reflected_point.data());
             if (best_value <= reflected_value &&
                 reflected_value < second_worst_value) {
                 worst_value = reflected_value;
                 worst_point = reflected_point;
                 return best_value;
             } else if (reflected_value < best_value) {
-                const std::vector<double> expanded_point =
+                const std::vector<T> expanded_point =
                         compute_reflection(centroid, reflected_point);
-                const double expanded_value = f(expanded_point.data());
+                const T expanded_value = f(expanded_point.data());
                 if (expanded_value < reflected_value) {
                     worst_value = expanded_value;
                     worst_point = expanded_point;
@@ -121,9 +122,9 @@ namespace dznl {
                     return reflected_value;
                 }
             } else if (reflected_value >= second_worst_value) {
-                const std::vector<double> contracted_point =
+                const std::vector<T> contracted_point =
                         compute_midpoint(worst_point, centroid);
-                const double contracted_value = f(contracted_point.data());
+                const T contracted_value = f(contracted_point.data());
                 if (contracted_value < worst_value) {
                     worst_value = contracted_value;
                     worst_point = contracted_point;
@@ -131,10 +132,10 @@ namespace dznl {
                            ? contracted_value : best_value;
                 }
             }
-            double best_shrunk_value = best_value;
+            T best_shrunk_value = best_value;
             for (std::size_t i = 1; i < n + 1; ++i) {
-                double &current_value = x[i].first;
-                std::vector<double> &current_point = x[i].second;
+                T &current_value = x[i].first;
+                std::vector<T> &current_point = x[i].second;
                 for (std::size_t j = 0; j < n; ++j) {
                     current_point[j] = (best_point[j] + current_point[j]) / 2;
                 }

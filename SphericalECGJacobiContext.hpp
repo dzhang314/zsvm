@@ -9,9 +9,10 @@
 #include <Eigen/Core>
 
 // Project-specific headers
-#include "Particle.hpp"
 #include "JacobiCoordinates.hpp"
 #include "PackedLinearAlgebra.hpp"
+#include "Particle.hpp"
+#include "Permutation.hpp"
 
 namespace zsvm {
 
@@ -40,14 +41,10 @@ namespace zsvm {
         std::vector<T> vcx;
         std::vector<T> vdx;
 
-        const packed_determinant_inverse_function<T>
-                packed_determinant_inverse;
-        const packed_kinetic_trace_function<T>
-                packed_kinetic_trace;
-        const packed_quadratic_form_function<T>
-                packed_quadratic_form;
-        const packed_permutation_conjugate_function<T>
-                packed_permutation_conjugate;
+        const packed_determinant_inverse_function<T> packed_determinant_inverse;
+        const packed_kinetic_trace_function<T> packed_kinetic_trace;
+        const packed_quadratic_form_function<T> packed_quadratic_form;
+        const packed_permutation_conjugate_function<T> packed_permutation_conjugate;
 
     private: // ============================================ FACTORY CONSTRUCTOR
 
@@ -55,10 +52,10 @@ namespace zsvm {
                 const std::vector<T> &charges,
                 std::size_t num_permutations,
                 int space_dimension,
-                const Eigen::MatrixXd &inverse_mass_matrix,
-                const Eigen::MatrixXd &pairwise_weight_vectors,
+                const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> &inverse_mass_matrix,
+                const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> &pairwise_weight_vectors,
                 const std::vector<T> &permutation_sign_vector,
-                const std::vector<Eigen::MatrixXd> &permutation_matrix_vector)
+                const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> &permutation_matrix_vector)
                 : num_particles(charges.size()),
                   num_pairs(num_particles * (num_particles - 1) / 2),
                   num_permutations(num_permutations),
@@ -115,8 +112,7 @@ namespace zsvm {
             for (std::size_t p = 0; p < num_permutations; ++p) {
                 permutation_sign_pointer[p] = permutation_sign_vector[p];
             }
-            auto permutation_matrix_pointer =
-                    const_cast<T *>(permutation_matrices.data());
+            auto permutation_matrix_pointer = const_cast<T *>(permutation_matrices.data());
             for (std::size_t p = 0, k = 0; p < num_permutations; ++p) {
                 for (std::size_t i = 0; i < num_particles - 1; ++i) {
                     for (std::size_t j = 0; j < num_particles - 1; ++j, ++k) {
@@ -130,8 +126,6 @@ namespace zsvm {
     public: // =========================================== STATIC FACTORY METHOD
 
         static SphericalECGJacobiContext create(
-                // TODO: zsvm:: namespace resolution operator should not be
-                // needed, but CLion doesn't find Particle<T> otherwise
                 const std::vector<zsvm::Particle<T>> &particles,
                 const std::string &mass_carrier,
                 const std::string &charge_carrier,
@@ -139,7 +133,7 @@ namespace zsvm {
             const std::size_t num_particles = particles.size();
             if (num_particles < 2) {
                 throw std::invalid_argument(
-                        "Attempted to construct SVMSolver "
+                        "Attempted to construct SphericalECGJacobiContext "
                         "with fewer than 2 particles");
             }
             std::vector<T> masses(num_particles);
@@ -167,19 +161,7 @@ namespace zsvm {
                     jaco::permutation_matrices(masses, allowed_permutations));
         }
 
-    public: // =================================== MATRIX ELEMENT HELPER METHODS
-
-        void gaussian_parameter_matrix(
-                const T *__restrict__ correlation_coefficients,
-                T *__restrict__ result) const {
-            for (std::size_t p = 0; p < num_pairs; ++p) { result[p] = 0.0; }
-            for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
-                const T c = std::exp(correlation_coefficients[p]);
-                for (std::size_t q = 0; q < num_pairs; ++q, ++k) {
-                    result[q] += c * weight_matrices[k];
-                }
-            }
-        }
+    private: // ================================== MATRIX ELEMENT HELPER METHODS
 
         void matrix_element_kernel(
                 T &__restrict__ overlap_kernel,
@@ -206,6 +188,18 @@ namespace zsvm {
 
     public: // ========================================== MATRIX ELEMENT METHODS
 
+        void gaussian_parameter_matrix(
+                const T *__restrict__ correlation_coefficients,
+                T *__restrict__ result) const {
+            for (std::size_t p = 0; p < num_pairs; ++p) { result[p] = 0.0; }
+            for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
+                const T c = std::exp(correlation_coefficients[p]);
+                for (std::size_t q = 0; q < num_pairs; ++q, ++k) {
+                    result[q] += c * weight_matrices[k];
+                }
+            }
+        }
+
         void evaluate_matrix_elements(
                 T &__restrict__ overlap_element,
                 T &__restrict__ hamiltonian_element,
@@ -216,12 +210,13 @@ namespace zsvm {
             T overlap_kernel, hamiltonian_kernel;
             for (std::size_t i = 0; i < num_permutations; ++i) {
                 for (std::size_t j = 0; j < num_permutations; ++j) {
-                    const T sign = permutation_signs[i] *
-                                        permutation_signs[j];
+                    const T sign = permutation_signs[i] * permutation_signs[j];
                     packed_permutation_conjugate(
-                            a, permutation_matrices.data() + i * matrix_size, ax);
+                            a, permutation_matrices.data() + i * matrix_size,
+                            ax);
                     packed_permutation_conjugate(
-                            b, permutation_matrices.data() + j * matrix_size, bx);
+                            b, permutation_matrices.data() + j * matrix_size,
+                            bx);
                     matrix_element_kernel(overlap_kernel, hamiltonian_kernel);
                     overlap_element += sign * overlap_kernel;
                     hamiltonian_element += sign * hamiltonian_kernel;

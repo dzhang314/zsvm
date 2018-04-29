@@ -16,7 +16,7 @@ using packed_kinetic_trace_function = T (*)(
         const T *__restrict__ c, const T *__restrict__ m);
 
 template <typename T>
-using packed_quadratic_form_function = double (*)(
+using packed_quadratic_form_function = T (*)(
         const T *__restrict__ x, const T *__restrict__ v);
 
 template <typename T>

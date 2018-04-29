@@ -5,10 +5,10 @@
 #include <algorithm> // for std::next_permutation
 #include <cstddef> // for std::size_t
 #include <stdexcept> // for std::invalid_argument
-#include <vector> // for std::vector
+#include <vector>
 
 // Project-specific headers
-#include "Particle.hpp" // for zsvm::Particle
+#include "Particle.hpp"
 
 namespace dznl {
 
@@ -19,7 +19,7 @@ namespace dznl {
         const std::size_t n = particles.size();
         if (permutation.size() != n) {
             throw std::invalid_argument(
-                    "is_invariant_permutation received particle and "
+                    "dznl::is_invariant_permutation received particle and "
                     "permutation vectors of different sizes");
         }
         for (std::size_t i = 0; i < n; ++i) {
@@ -36,7 +36,7 @@ namespace dznl {
         const std::size_t n = particles.size();
         if (permutation.size() != n) {
             throw std::invalid_argument(
-                    "count_changes received particle and "
+                    "dznl::count_changes received particle and "
                     "permutation vectors of different sizes");
         }
         std::size_t count = 0;

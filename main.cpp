@@ -41,7 +41,7 @@ namespace zsvm {
         const std::size_t num_particles;
         const std::size_t num_parameters;
         SphericalECGOverlapContext context;
-        RealVariationalSolver solver;
+        RealVariationalSolver<double> solver;
         std::vector<std::vector<double>> basis;
         std::vector<std::vector<double>> basis_matrices;
 
@@ -188,7 +188,7 @@ namespace zsvm {
                              double initial_step_size,
                              std::size_t max_steps) {
             std::vector<double> basis_matrix(num_parameters);
-            dznl::AmoebaOptimizer amoeba(
+            dznl::AmoebaOptimizer<double> amoeba(
                     basis_element, num_parameters, initial_step_size,
                     [&](const double *b) {
                         construct_basis_matrix(basis_matrix.data(), b);
@@ -238,7 +238,7 @@ namespace zsvm {
         const std::size_t num_particles;
         const std::size_t num_parameters;
         SphericalECGJacobiContext<double> context;
-        RealVariationalSolver solver;
+        RealVariationalSolver<double> solver;
         std::vector<std::vector<double>> basis;
         std::vector<std::vector<double>> basis_matrices;
 
@@ -348,7 +348,7 @@ namespace zsvm {
                              double initial_step_size,
                              std::size_t max_steps) {
             std::vector<double> basis_matrix(num_parameters);
-            dznl::AmoebaOptimizer amoeba(
+            dznl::AmoebaOptimizer<double> amoeba(
                     basis_element, num_parameters, initial_step_size,
                     [&](const double *b) {
                         construct_basis_matrix(basis_matrix.data(), b);
@@ -989,7 +989,71 @@ namespace zsvm {
 } // namespace zsvm
 
 
+#include <boost/multiprecision/cpp_bin_float.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/nondet_random.hpp>
+#include <boost/random.hpp>
+
+typedef boost::multiprecision::cpp_bin_float_100 bigfloat_t;
+
+typedef boost::random::mt19937 random_generator_t;
+
+typedef std::array<
+        random_generator_t::result_type,
+        random_generator_t::state_size
+> random_state_t;
+
+typedef boost::random::independent_bits_engine<
+        random_generator_t,
+        std::numeric_limits<bigfloat_t>::digits,
+        boost::multiprecision::cpp_int
+> random_engine_t;
+
 int main(int argc, char **argv) {
+    std::cout << std::setprecision(
+            std::numeric_limits<bigfloat_t>::max_digits10 - 1);
+
+//    std::vector<zsvm::Particle<bigfloat_t>> particles;
+//    const std::string mass_carrier("mass");
+//    const std::string charge_carrier("charge");
+//
+//    std::map<std::string, bigfloat_t> electron_carriers;
+//    electron_carriers.insert({mass_carrier, 1});
+//    electron_carriers.insert({charge_carrier, -1});
+//
+//    std::map<std::string, bigfloat_t> positron_carriers;
+//    positron_carriers.insert({mass_carrier, 1});
+//    positron_carriers.insert({charge_carrier, +1});
+//
+//    particles.emplace_back(0, +1, electron_carriers);
+//    particles.emplace_back(0, -1, electron_carriers);
+//    particles.emplace_back(1, +1, positron_carriers);
+//    particles.emplace_back(1, -1, positron_carriers);
+//
+//
+//    zsvm::SphericalECGJacobiContext<bigfloat_t> context =
+//            zsvm::SphericalECGJacobiContext<bigfloat_t>::create(
+//                    particles, mass_carrier, charge_carrier, 3);
+//
+//    random_state_t seed_data;
+//    std::random_device nondet_random_source;
+//    std::generate(seed_data.begin(), seed_data.end(),
+//                  std::ref(nondet_random_source));
+//    seed_data[0] = static_cast<random_generator_t::result_type>(
+//            std::chrono::duration_cast<std::chrono::nanoseconds>(
+//                    std::chrono::system_clock::now().time_since_epoch()).count()
+//            % std::numeric_limits<random_generator_t::result_type>::max());
+//    boost::random::seed_seq seed_sequence(seed_data.begin(), seed_data.end());
+//    random_engine_t random_engine(seed_sequence);
+//
+//    boost::random::normal_distribution<bigfloat_t>
+//            correlation_distribution(0, 3);
+//
+//    bigfloat_t one(1);
+//    std::cout << correlation_distribution(random_engine) << std::endl;
+//    std::cout << boost::multiprecision::ldexp(one, -1) << std::endl;
+//    std::cout << one << std::endl;
+
     if (argc != 2) {
         std::cout << "Usage: " << argv[0] << " SCRIPT_FILE" << std::endl;
         return 1;
@@ -1004,7 +1068,6 @@ int main(int argc, char **argv) {
         }
     }
     std::cout << std::scientific;
-    std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
     zsvm::ScriptInterpreter interpreter(script_file_name);
     interpreter.run();
     return 0;

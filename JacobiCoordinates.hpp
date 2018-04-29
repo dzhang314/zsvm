@@ -25,9 +25,9 @@ namespace jaco {
                 if (i >= j) {
                     u(i, j) = masses[j] / mass_sums[i];
                 } else if (i == j - 1) {
-                    u(i, j) = -1.0;
+                    u(i, j) = -1;
                 } else {
-                    u(i, j) = 0.0;
+                    u(i, j) = 0;
                 }
             }
         }
@@ -47,13 +47,13 @@ namespace jaco {
         for (std::size_t i = 0; i < n; ++i) {
             for (std::size_t j = 0; j < n; ++j) {
                 if (j + 1 == n) {
-                    v(i, j) = 1.0;
+                    v(i, j) = 1;
                 } else if (i <= j) {
                     v(i, j) = masses[j + 1] / mass_sums[j + 1];
                 } else if (i == j + 1) {
                     v(i, j) = -mass_sums[j] / mass_sums[i];
                 } else {
-                    v(i, j) = 0.0;
+                    v(i, j) = 0;
                 }
             }
         }
@@ -70,9 +70,9 @@ namespace jaco {
         for (std::size_t i = 0; i < n; ++i) {
             for (std::size_t j = 0; j < n; ++j) {
                 if (i == j) {
-                    inverse_masses(i, j) = 1.0 / masses[i];
+                    inverse_masses(i, j) = 1 / masses[i];
                 } else {
-                    inverse_masses(i, j) = 0.0;
+                    inverse_masses(i, j) = 0;
                 }
             }
         }
@@ -85,7 +85,7 @@ namespace jaco {
         const std::size_t n = masses.size();
         if (n == 0) {
             throw std::invalid_argument(
-                    "reduced_inverse_mass_matrix "
+                    "jaco::reduced_inverse_mass_matrix "
                     "received empty vector of masses");
         }
         const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m =
@@ -105,7 +105,7 @@ namespace jaco {
         const std::size_t n = masses.size();
         if (n == 0) {
             throw std::invalid_argument(
-                    "pairwise_weights received empty vector of masses");
+                    "jaco::pairwise_weights received empty vector of masses");
         }
         const std::size_t num_pairs = n * (n - 1) / 2;
         const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> v =
@@ -129,7 +129,8 @@ namespace jaco {
         const std::size_t n = masses.size();
         if (n == 0) {
             throw std::invalid_argument(
-                    "permutation_matrices received empty vector of masses");
+                    "jaco::permutation_matrices received "
+                    "empty vector of masses");
         }
         const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> u =
                 transformation_matrix(masses);
