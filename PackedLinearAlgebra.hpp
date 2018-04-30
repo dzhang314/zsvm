@@ -58,46 +58,58 @@ using packed_permutation_conjugate_function = void (*)(
 
 template <typename T>
 struct PackedDeterminantInverse {
-    static constexpr packed_determinant_inverse_function<T> FUNC[] = {
-            packed_determinant_inverse_1<T>,
-            packed_determinant_inverse_2<T>,
-            packed_determinant_inverse_3<T>,
-            packed_determinant_inverse_4<T>,
-            packed_determinant_inverse_5<T>,
-    };
+    static packed_determinant_inverse_function<T> *functions() {
+        static const packed_determinant_inverse_function<T> funcs[] = {
+                packed_determinant_inverse_1<T>,
+                packed_determinant_inverse_2<T>,
+                packed_determinant_inverse_3<T>,
+                packed_determinant_inverse_4<T>,
+                packed_determinant_inverse_5<T>,
+        };
+        return funcs;
+    }
 };
 
 template <typename T>
 struct PackedKineticTrace {
-    static constexpr packed_kinetic_trace_function<T> FUNC[] = {
-            packed_kinetic_trace_1<T>,
-            packed_kinetic_trace_2<T>,
-            packed_kinetic_trace_3<T>,
-            packed_kinetic_trace_4<T>,
-            packed_kinetic_trace_5<T>,
-    };
+    static packed_kinetic_trace_function<T> *functions() {
+        static const packed_kinetic_trace_function<T> funcs[] = {
+                packed_kinetic_trace_1<T>,
+                packed_kinetic_trace_2<T>,
+                packed_kinetic_trace_3<T>,
+                packed_kinetic_trace_4<T>,
+                packed_kinetic_trace_5<T>,
+        };
+        return funcs;
+    }
 };
 
 template <typename T>
 struct PackedQuadraticForm {
-    static constexpr packed_quadratic_form_function<T> FUNC[] = {
-            packed_quadratic_form_1<T>,
-            packed_quadratic_form_2<T>,
-            packed_quadratic_form_3<T>,
-            packed_quadratic_form_4<T>,
-            packed_quadratic_form_5<T>,
-    };
+    static packed_quadratic_form_function<T> *functions() {
+        static const packed_quadratic_form_function<T> funcs[] = {
+                packed_quadratic_form_1<T>,
+                packed_quadratic_form_2<T>,
+                packed_quadratic_form_3<T>,
+                packed_quadratic_form_4<T>,
+                packed_quadratic_form_5<T>,
+        };
+        return funcs;
+    }
 };
 
 template <typename T>
 struct PackedPermutationConjugate {
-    static constexpr packed_permutation_conjugate_function<T> FUNC[] = {
-            packed_permutation_conjugate_1<T>,
-            packed_permutation_conjugate_2<T>,
-            packed_permutation_conjugate_3<T>,
-            packed_permutation_conjugate_4<T>,
-            packed_permutation_conjugate_5<T>,
-    };
+    static packed_permutation_conjugate_function<T> *functions() {
+        static const packed_permutation_conjugate_function<T> funcs[] = {
+                packed_permutation_conjugate_1<T>,
+                packed_permutation_conjugate_2<T>,
+                packed_permutation_conjugate_3<T>,
+                packed_permutation_conjugate_4<T>,
+                packed_permutation_conjugate_5<T>,
+        };
+        return funcs;
+    }
 };
 
 #endif // ZSVM_PACKED_LINEAR_ALGEBRA_HPP_INCLUDED
