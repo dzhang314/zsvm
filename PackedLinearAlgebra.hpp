@@ -58,7 +58,7 @@ using packed_permutation_conjugate_function = void (*)(
 
 template <typename T>
 struct PackedDeterminantInverse {
-    static packed_determinant_inverse_function<T> *functions() {
+    static const packed_determinant_inverse_function<T> *functions() {
         static const packed_determinant_inverse_function<T> funcs[] = {
                 packed_determinant_inverse_1<T>,
                 packed_determinant_inverse_2<T>,
@@ -72,7 +72,7 @@ struct PackedDeterminantInverse {
 
 template <typename T>
 struct PackedKineticTrace {
-    static packed_kinetic_trace_function<T> *functions() {
+    static const packed_kinetic_trace_function<T> *functions() {
         static const packed_kinetic_trace_function<T> funcs[] = {
                 packed_kinetic_trace_1<T>,
                 packed_kinetic_trace_2<T>,
@@ -86,7 +86,7 @@ struct PackedKineticTrace {
 
 template <typename T>
 struct PackedQuadraticForm {
-    static packed_quadratic_form_function<T> *functions() {
+    static const packed_quadratic_form_function<T> *functions() {
         static const packed_quadratic_form_function<T> funcs[] = {
                 packed_quadratic_form_1<T>,
                 packed_quadratic_form_2<T>,
@@ -100,7 +100,7 @@ struct PackedQuadraticForm {
 
 template <typename T>
 struct PackedPermutationConjugate {
-    static packed_permutation_conjugate_function<T> *functions() {
+    static const packed_permutation_conjugate_function<T> *functions() {
         static const packed_permutation_conjugate_function<T> funcs[] = {
                 packed_permutation_conjugate_1<T>,
                 packed_permutation_conjugate_2<T>,
