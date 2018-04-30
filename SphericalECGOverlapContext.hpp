@@ -15,29 +15,6 @@
 
 namespace zsvm {
 
-    static inline double half_inverse_pow(double x, long long int n) {
-        switch (n) {
-            case 0:
-                return 1.0;
-            case 1:
-                return 1.0 / std::sqrt(x);
-            case 2:
-                return 1.0 / x;
-            case 3:
-                return 1.0 / (x * std::sqrt(x));
-            case 4:
-                return 1.0 / (x * x);
-            case 5:
-                return 1.0 / (x * x * std::sqrt(x));
-            case 6:
-                return 1.0 / (x * x * x);
-            case 7:
-                return 1.0 / (x * x * x * std::sqrt(x));
-            default:
-                return 1.0 / std::sqrt(std::pow(x, n));
-        }
-    }
-
     class SphericalECGOverlapContext {
 
         static std::vector<SphericalECGDispersionContext>

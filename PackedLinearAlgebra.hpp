@@ -1,7 +1,37 @@
 #ifndef ZSVM_PACKED_LINEAR_ALGEBRA_HPP_INCLUDED
 #define ZSVM_PACKED_LINEAR_ALGEBRA_HPP_INCLUDED
 
+// C++ standard library headers
+#include <cmath> // for std::sqrt
+
+// Project-specific headers
 #include "PackedLinearAlgebraImpl.hpp"
+
+template <typename T>
+T half_inverse_pow(const T &x, long long int n) {
+    using std::sqrt;
+    using std::pow;
+    switch (n) {
+        case 0:
+            return 1;
+        case 1:
+            return 1 / sqrt(x);
+        case 2:
+            return 1 / x;
+        case 3:
+            return 1 / (x * sqrt(x));
+        case 4:
+            return 1 / (x * x);
+        case 5:
+            return 1 / (x * x * sqrt(x));
+        case 6:
+            return 1 / (x * x * x);
+        case 7:
+            return 1 / (x * x * x * sqrt(x));
+        default:
+            return 1 / sqrt(pow(x, n));
+    }
+}
 
 // CLion does not understand how to format function type alias declarations.
 // @formatter:off

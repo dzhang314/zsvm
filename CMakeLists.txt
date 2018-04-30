@@ -22,6 +22,7 @@ add_executable(zsvm
         SphericalECGPairwiseContext.hpp
         SphericalECGOverlapContext.hpp
         SphericalECGJacobiContext.hpp
+        SphericalECGJacobiVariationalOptimizer.hpp
         AmoebaOptimizer.hpp
         ScriptToken.hpp
         ScriptToken.cpp

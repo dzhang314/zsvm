@@ -90,7 +90,7 @@ namespace zsvm {
                 const T &strict_upper_bound,
                 const T &t, const ArrayXT &beta) const {
             using std::ldexp;
-            constexpr T one(1);
+            const T one(1);
             int k = 0;
             lower_bound = strict_upper_bound - ldexp(one, -k);
             upper_bound = strict_upper_bound - ldexp(one, -k - 1);
@@ -123,12 +123,12 @@ namespace zsvm {
                 T lower_bound, T upper_bound,
                 const T &t, const ArrayXT &beta) const {
             using std::abs;
-            constexpr T TOLERANCE = 64 * std::numeric_limits<T>::epsilon();
+            const T tolerance = 64 * std::numeric_limits<T>::epsilon();
             while (true) {
                 const T midpoint = (lower_bound + upper_bound) / 2;
                 const T relative_difference = abs(
                         (upper_bound - lower_bound) / midpoint);
-                if (relative_difference < TOLERANCE) { return midpoint; }
+                if (relative_difference < tolerance) { return midpoint; }
                 const T midpoint_objective = secular_objective_function(
                         midpoint, t, beta);
                 if (midpoint_objective == 0) {

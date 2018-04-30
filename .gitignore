@@ -1,3 +1,6 @@
 # CLion IDE project files
 .idea
 cmake-build-debug
+
+# ZSVM output files
+basis*.txt

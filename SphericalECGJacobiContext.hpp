@@ -21,11 +21,13 @@ namespace zsvm {
 
     private: // =============================================== MEMBER VARIABLES
 
+        typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatrixXT;
+
         const std::size_t num_particles;
         const std::size_t num_pairs;
         const std::size_t num_permutations;
         const std::size_t matrix_size;
-        const int space_dimension;
+        const long long int space_dimension;
         const T dimension_factor;
         const T kinetic_factor;
 
@@ -48,22 +50,28 @@ namespace zsvm {
 
     private: // ============================================ FACTORY CONSTRUCTOR
 
+        T gamma(const T &x) {
+            using std::tgamma;
+            return tgamma(x);
+        }
+
         explicit SphericalECGJacobiContext(
                 const std::vector<T> &charges,
                 std::size_t num_permutations,
-                int space_dimension,
-                const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> &inverse_mass_matrix,
-                const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> &pairwise_weight_vectors,
+                long long int space_dimension,
+                const MatrixXT &inverse_mass_matrix,
+                const MatrixXT &pairwise_weight_vectors,
                 const std::vector<T> &permutation_sign_vector,
-                const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> &permutation_matrix_vector)
+                const std::vector<MatrixXT> &permutation_matrix_vector)
                 : num_particles(charges.size()),
                   num_pairs(num_particles * (num_particles - 1) / 2),
                   num_permutations(num_permutations),
                   matrix_size((num_particles - 1) * (num_particles - 1)),
                   space_dimension(space_dimension),
-                  dimension_factor(std::tgamma(0.5 * (space_dimension - 1.0)) /
-                                   std::tgamma(0.5 * space_dimension)),
-                  kinetic_factor((0.5 * space_dimension) / dimension_factor),
+                  dimension_factor(gamma((space_dimension - static_cast<T>(1)) /
+                                         static_cast<T>(2)) /
+                                   gamma(space_dimension / static_cast<T>(2))),
+                  kinetic_factor(space_dimension / (2 * dimension_factor)),
                   inverse_masses(num_particles - 1),
                   weight_vectors(num_pairs * (num_particles - 1)),
                   weight_matrices(num_pairs * num_pairs),
@@ -129,7 +137,7 @@ namespace zsvm {
                 const std::vector<zsvm::Particle<T>> &particles,
                 const std::string &mass_carrier,
                 const std::string &charge_carrier,
-                int space_dimension) {
+                long long int space_dimension) {
             const std::size_t num_particles = particles.size();
             if (num_particles < 2) {
                 throw std::invalid_argument(
@@ -149,7 +157,7 @@ namespace zsvm {
                 const std::size_t signature =
                         dznl::count_changes(particles, permutation) / 2 +
                         dznl::count_inversions(permutation);
-                permutation_signs.push_back((signature % 2 == 0) ? +1.0 : -1.0);
+                permutation_signs.push_back((signature % 2 == 0) ? +1 : -1);
             }
             return SphericalECGJacobiContext(
                     charges,
@@ -166,6 +174,7 @@ namespace zsvm {
         void matrix_element_kernel(
                 T &__restrict__ overlap_kernel,
                 T &__restrict__ hamiltonian_kernel) {
+            using std::sqrt;
             T *__restrict__ const ax = vax.data();
             T *__restrict__ const bx = vbx.data();
             T *__restrict__ const cx = vcx.data();
@@ -180,8 +189,7 @@ namespace zsvm {
             for (std::size_t k = 0; k < num_pairs; ++k) {
                 const T alpha = packed_quadratic_form(
                         dx, weight_vectors.data() + (num_particles - 1) * k);
-                hamiltonian_kernel += charge_products[k] /
-                                      std::sqrt(2.0 * alpha);
+                hamiltonian_kernel += charge_products[k] / sqrt(2 * alpha);
             }
             hamiltonian_kernel *= dimension_factor * overlap_kernel;
         }
@@ -191,9 +199,10 @@ namespace zsvm {
         void gaussian_parameter_matrix(
                 const T *__restrict__ correlation_coefficients,
                 T *__restrict__ result) const {
-            for (std::size_t p = 0; p < num_pairs; ++p) { result[p] = 0.0; }
+            using std::exp;
+            for (std::size_t p = 0; p < num_pairs; ++p) { result[p] = 0; }
             for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
-                const T c = std::exp(correlation_coefficients[p]);
+                const T c = exp(correlation_coefficients[p]);
                 for (std::size_t q = 0; q < num_pairs; ++q, ++k) {
                     result[q] += c * weight_matrices[k];
                 }
@@ -206,7 +215,7 @@ namespace zsvm {
                 const T *a, const T *b) {
             T *__restrict__ const ax = vax.data();
             T *__restrict__ const bx = vbx.data();
-            overlap_element = hamiltonian_element = 0.0;
+            overlap_element = hamiltonian_element = 0;
             T overlap_kernel, hamiltonian_kernel;
             for (std::size_t i = 0; i < num_permutations; ++i) {
                 for (std::size_t j = 0; j < num_permutations; ++j) {
