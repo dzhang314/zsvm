@@ -83,13 +83,17 @@ namespace zsvm {
                   vcx(num_pairs),
                   vdx(num_pairs),
                   packed_determinant_inverse(
-                          PACKED_DETERMINANT_INVERSE<T>[num_particles - 2]),
+                          PackedDeterminantInverse<T>::FUNC[
+                                  num_particles - 2]),
                   packed_kinetic_trace(
-                          PACKED_KINETIC_TRACE<T>[num_particles - 2]),
+                          PackedKineticTrace<T>::FUNC[
+                                  num_particles - 2]),
                   packed_quadratic_form(
-                          PACKED_QUADRATIC_FORM<T>[num_particles - 2]),
+                          PackedQuadraticForm<T>::FUNC[
+                                  num_particles - 2]),
                   packed_permutation_conjugate(
-                          PACKED_PERMUTATION_CONJUGATE<T>[num_particles - 2]) {
+                          PackedPermutationConjugate<T>::FUNC[
+                                  num_particles - 2]) {
             auto inverse_mass_pointer = const_cast<T *>(inverse_masses.data());
             for (std::size_t i = 0; i < num_particles - 1; ++i) {
                 inverse_mass_pointer[i] = inverse_mass_matrix(i, i);

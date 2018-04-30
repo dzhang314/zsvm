@@ -39,7 +39,7 @@ int main(int, char **) {
     positron_carriers.insert({charge_carrier, +1});
 
     particles.emplace_back(0, +1, electron_carriers);
-    particles.emplace_back(0, -1, electron_carriers);
+    // particles.emplace_back(0, -1, electron_carriers);
     particles.emplace_back(1, +1, positron_carriers);
     // particles.emplace_back(1, -1, positron_carriers);
 
