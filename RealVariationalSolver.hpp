@@ -60,7 +60,7 @@ namespace zsvm {
 
         void compute_eigenstates() {
             if (!clean) {
-                Eigen::GeneralizedSelfAdjointEigenSolver eigen_solver(
+                Eigen::GeneralizedSelfAdjointEigenSolver<MatrixXT> eigen_solver(
                         hamiltonian_matrix, overlap_matrix,
                         Eigen::ComputeEigenvectors | Eigen::Ax_lBx);
                 eigenvalues = eigen_solver.eigenvalues();
