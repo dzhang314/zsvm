@@ -8,6 +8,9 @@
 #include <string>
 #include <vector>
 
+// OpenMP multithreading headers
+#include <omp.h>
+
 // Boost library headers
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/random.hpp> // for boost::random::independent_bits_engine etc.
@@ -33,7 +36,7 @@ namespace zsvm {
                 std::numeric_limits<T>::digits,
                 boost::multiprecision::cpp_int> random_engine_t;
 
-    public: // =================================================================
+    private: // ================================================================
 
         const std::size_t num_particles;
         const std::size_t num_parameters;
@@ -41,50 +44,8 @@ namespace zsvm {
         RealVariationalSolver<T> solver;
         std::vector<std::vector<T>> basis;
         std::vector<std::vector<T>> basis_matrices;
-
-        explicit SphericalECGJacobiVariationalOptimizer(
-                long long int space_dimension,
-                const std::vector<zsvm::Particle<T>> &particles,
-                const std::string &mass_carrier,
-                const std::string &charge_carrier)
-                : num_particles(particles.size()),
-                  num_parameters(num_particles * (num_particles - 1) / 2),
-                  context(SphericalECGJacobiContext<T>::create(
-                          particles, mass_carrier, charge_carrier,
-                          space_dimension)) {}
-
-        T get_ground_state_energy() {
-            return solver.get_eigenvalue(0);
-        }
-
-    public: // =================================================================
-
-        T augmented_ground_state_energy(
-                const T *__restrict__ new_basis_matrix) {
-            if (solver.empty()) {
-                T overlap_element, hamiltonian_element;
-                context.evaluate_matrix_elements(
-                        overlap_element, hamiltonian_element,
-                        new_basis_matrix, new_basis_matrix);
-                return hamiltonian_element / overlap_element;
-            } else {
-                const std::size_t basis_size = basis_matrices.size();
-                std::vector<T> new_overlap_column(basis_size + 1);
-                std::vector<T> new_hamiltonian_column(basis_size + 1);
-                for (std::size_t i = 0; i < basis_size; ++i) {
-                    context.evaluate_matrix_elements(
-                            new_overlap_column[i], new_hamiltonian_column[i],
-                            basis_matrices[i].data(), new_basis_matrix);
-                }
-                context.evaluate_matrix_elements(
-                        new_overlap_column[basis_size],
-                        new_hamiltonian_column[basis_size],
-                        new_basis_matrix, new_basis_matrix);
-                return solver.minimum_augmented_eigenvalue(
-                        new_overlap_column.data(),
-                        new_hamiltonian_column.data());
-            }
-        }
+        random_engine_t random_engine;
+        boost::random::normal_distribution<T> correlation_distribution;
 
         static random_engine_t properly_seeded_random_engine() {
             random_state_t seed_data;
@@ -102,11 +63,64 @@ namespace zsvm {
             return random_engine;
         }
 
+    public: // =================================================================
+
+        explicit SphericalECGJacobiVariationalOptimizer(
+                long long int space_dimension,
+                const std::vector<zsvm::Particle<T>> &particles,
+                const std::string &mass_carrier,
+                const std::string &charge_carrier)
+                : num_particles(particles.size()),
+                  num_parameters(num_particles * (num_particles - 1) / 2),
+                  context(SphericalECGJacobiContext<T>::create(
+                          particles, mass_carrier, charge_carrier,
+                          space_dimension)),
+                  random_engine(properly_seeded_random_engine()),
+                  correlation_distribution(0, 3) {}
+
+        T get_ground_state_energy() {
+            return solver.get_eigenvalue(0);
+        }
+
+    public: // =================================================================
+
+        const std::vector<std::vector<T>> &get_basis() {
+            return basis;
+        }
+
+        void set_basis(const std::vector<std::vector<T>> &input_basis) {
+            basis = input_basis;
+            recompute_basis_matrices();
+            recompute_solver_matrices();
+        }
+
+        T augmented_ground_state_energy(
+                const T *__restrict__ new_basis_matrix) {
+            if (solver.empty()) {
+                T overlap_element, hamiltonian_element;
+                context.evaluate_matrix_elements(
+                        overlap_element, hamiltonian_element,
+                        new_basis_matrix, new_basis_matrix);
+                return hamiltonian_element / overlap_element;
+            }
+            const std::size_t basis_size = basis_matrices.size();
+            std::vector<T> new_overlap_column(basis_size + 1);
+            std::vector<T> new_hamiltonian_column(basis_size + 1);
+            for (std::size_t i = 0; i < basis_size; ++i) {
+                context.evaluate_matrix_elements(
+                        new_overlap_column[i], new_hamiltonian_column[i],
+                        basis_matrices[i].data(), new_basis_matrix);
+            }
+            context.evaluate_matrix_elements(
+                    new_overlap_column[basis_size],
+                    new_hamiltonian_column[basis_size],
+                    new_basis_matrix, new_basis_matrix);
+            return solver.minimum_augmented_eigenvalue(
+                    new_overlap_column.data(),
+                    new_hamiltonian_column.data());
+        }
+
         void random_basis_element(T *__restrict__ basis_element) {
-            static random_engine_t random_engine =
-                    properly_seeded_random_engine();
-            boost::random::normal_distribution<T>
-                    correlation_distribution(0, 3);
             for (std::size_t i = 0; i < num_parameters; ++i) {
                 basis_element[i] = correlation_distribution(random_engine);
             }
@@ -118,7 +132,63 @@ namespace zsvm {
             context.gaussian_parameter_matrix(basis_element, basis_matrix);
         }
 
-        void expand_amoeba(std::size_t num_trials,
+        void add_basis_element(const std::vector<T> &basis_element) {
+            basis.push_back(basis_element);
+            std::vector<T> basis_matrix(num_parameters);
+            construct_basis_matrix(basis_matrix.data(), basis_element.data());
+            basis_matrices.push_back(basis_matrix);
+            const std::size_t basis_size = basis.size();
+            solver.set_basis_size_conservative(basis_size);
+            for (std::size_t i = 0; i < basis_size - 1; ++i) {
+                context.evaluate_matrix_elements(
+                        solver.overlap_matrix_element(i, basis_size - 1),
+                        solver.hamiltonian_matrix_element(i, basis_size - 1),
+                        basis_matrices[i].data(),
+                        basis_matrices[basis_size - 1].data());
+                solver.overlap_matrix_element(basis_size - 1, i) =
+                        solver.overlap_matrix_element(i, basis_size - 1);
+                solver.hamiltonian_matrix_element(basis_size - 1, i) =
+                        solver.hamiltonian_matrix_element(i, basis_size - 1);
+            }
+            context.evaluate_matrix_elements(
+                    solver.overlap_matrix_element(
+                            basis_size - 1, basis_size - 1),
+                    solver.hamiltonian_matrix_element(
+                            basis_size - 1, basis_size - 1),
+                    basis_matrices[basis_size - 1].data(),
+                    basis_matrices[basis_size - 1].data());
+        }
+
+        void replace_basis_element(const std::vector<T> &basis_element) {
+            const std::size_t basis_size = basis.size();
+            basis[basis_size - 1] = basis_element;
+            construct_basis_matrix(basis_matrices[basis_size - 1].data(),
+                                   basis_element.data());
+            for (std::size_t i = 0; i < basis_size - 1; ++i) {
+                context.evaluate_matrix_elements(
+                        solver.overlap_matrix_element(i, basis_size - 1),
+                        solver.hamiltonian_matrix_element(i, basis_size - 1),
+                        basis_matrices[i].data(),
+                        basis_matrices[basis_size - 1].data());
+                solver.overlap_matrix_element(basis_size - 1, i) =
+                        solver.overlap_matrix_element(i, basis_size - 1);
+                solver.hamiltonian_matrix_element(basis_size - 1, i) =
+                        solver.hamiltonian_matrix_element(i, basis_size - 1);
+            }
+            context.evaluate_matrix_elements(
+                    solver.overlap_matrix_element(
+                            basis_size - 1, basis_size - 1),
+                    solver.hamiltonian_matrix_element(
+                            basis_size - 1, basis_size - 1),
+                    basis_matrices[basis_size - 1].data(),
+                    basis_matrices[basis_size - 1].data());
+        }
+
+        std::vector<T> last_basis_element() {
+            return basis.back();
+        }
+
+        bool expand_amoeba(std::size_t num_trials,
                            const T &initial_step_size,
                            std::size_t max_steps) {
             std::vector<T> new_basis_element(num_parameters);
@@ -136,12 +206,10 @@ namespace zsvm {
                 }
             }
             if (!best_basis_element.empty()) {
-                basis.push_back(best_basis_element);
-                std::vector<T> best_basis_matrix(num_parameters);
-                construct_basis_matrix(best_basis_matrix.data(),
-                                       best_basis_element.data());
-                basis_matrices.push_back(best_basis_matrix);
-                recompute_solver_matrices();
+                add_basis_element(best_basis_element);
+                return true;
+            } else {
+                return false;
             }
         }
 
@@ -175,9 +243,10 @@ namespace zsvm {
         }
 
         void recompute_solver_matrices() {
-            solver.set_basis_size_destructive(basis_matrices.size());
-            for (std::size_t i = 0; i < basis_matrices.size(); ++i) {
-                for (std::size_t j = 0; j < basis_matrices.size(); ++j) {
+            const std::size_t num_basis_matrices = basis_matrices.size();
+            solver.set_basis_size_destructive(num_basis_matrices);
+            for (std::size_t i = 0; i < num_basis_matrices; ++i) {
+                for (std::size_t j = 0; j < num_basis_matrices; ++j) {
                     context.evaluate_matrix_elements(
                             solver.overlap_matrix_element(i, j),
                             solver.hamiltonian_matrix_element(i, j),
