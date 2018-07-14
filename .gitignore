@@ -2,5 +2,8 @@
 .idea
 cmake-build-debug
 
+# Visual Studio IDE project files
+.vs
+
 # ZSVM output files
 basis*.txt

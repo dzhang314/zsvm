@@ -1,6 +1,7 @@
 #include "ScriptTokenizer.hpp"
 
 // C++ standard library headers
+#include <cctype> // std::isalpha, std::isdigit, etc.
 #include <cmath> // for std::pow
 #include <sstream> // for std::ostringstream
 #include <stdexcept> // for std::invalid_argument

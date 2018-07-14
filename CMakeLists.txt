@@ -5,9 +5,16 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_definitions(-DEIGEN_NO_DEBUG=1)
 
-add_compile_options(
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options(
         -Wall -Wextra -pedantic -Werror -pedantic-errors
         -O3 -march=native -mtune=native -fopenmp)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    # using Intel C++
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	include_directories(SYSTEM "C:/Programs/boost_1_67_0")
+	include_directories(SYSTEM "C:/Programs/eigen-eigen-5a0156e40feb")
+endif()
 
 add_executable(zsvm
         EnumTypes.hpp
