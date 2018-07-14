@@ -1,9 +1,11 @@
 #ifndef ZSVM_PACKED_LINEAR_ALGEBRA_IMPL_HPP
 #define ZSVM_PACKED_LINEAR_ALGEBRA_IMPL_HPP
 
+#include "Restrict.hpp"
+
 template <typename T>
 T packed_determinant_inverse_1(
-        const T *__restrict__ x, T *__restrict__ y) noexcept {
+        const T *RESTRICT x, T *RESTRICT y) noexcept {
     const T det = x[0];
     y[0] = 1 / det;
     return det;
@@ -11,27 +13,27 @@ T packed_determinant_inverse_1(
 
 template <typename T>
 T packed_kinetic_trace_1(
-        const T *__restrict__ a, const T *__restrict__ b,
-        const T *__restrict__ c, const T *__restrict__ m) noexcept {
+        const T *RESTRICT a, const T *RESTRICT b,
+        const T *RESTRICT c, const T *RESTRICT m) noexcept {
     return a[0] * b[0] * c[0] * m[0];
 }
 
 template <typename T>
 T packed_quadratic_form_1(
-        const T *__restrict__ x, const T *__restrict__ v) noexcept {
+        const T *RESTRICT x, const T *RESTRICT v) noexcept {
     return v[0] * v[0] * x[0];
 }
 
 template <typename T>
 void packed_permutation_conjugate_1(
-        const T *__restrict__ x, const T *__restrict__ p,
-        T *__restrict__ y) noexcept {
+        const T *RESTRICT x, const T *RESTRICT p,
+        T *RESTRICT y) noexcept {
     y[0] = p[0] * p[0] * x[0];
 }
 
 template <typename T>
 T packed_determinant_inverse_2(
-        const T *__restrict__ x, T *__restrict__ y) noexcept {
+        const T *RESTRICT x, T *RESTRICT y) noexcept {
     const T det =
             -x[1] * x[1]
             + x[0] * x[2];
@@ -43,8 +45,8 @@ T packed_determinant_inverse_2(
 
 template <typename T>
 T packed_kinetic_trace_2(
-        const T *__restrict__ a, const T *__restrict__ b,
-        const T *__restrict__ c, const T *__restrict__ m) noexcept {
+        const T *RESTRICT a, const T *RESTRICT b,
+        const T *RESTRICT c, const T *RESTRICT m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -57,7 +59,7 @@ T packed_kinetic_trace_2(
 
 template <typename T>
 T packed_quadratic_form_2(
-        const T *__restrict__ x, const T *__restrict__ v) noexcept {
+        const T *RESTRICT x, const T *RESTRICT v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2];
@@ -65,8 +67,8 @@ T packed_quadratic_form_2(
 
 template <typename T>
 void packed_permutation_conjugate_2(
-        const T *__restrict__ x, const T *__restrict__ p,
-        T *__restrict__ y) noexcept {
+        const T *RESTRICT x, const T *RESTRICT p,
+        T *RESTRICT y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2];
@@ -81,7 +83,7 @@ void packed_permutation_conjugate_2(
 
 template <typename T>
 T packed_determinant_inverse_3(
-        const T *__restrict__ x, T *__restrict__ y) noexcept {
+        const T *RESTRICT x, T *RESTRICT y) noexcept {
     const T det =
             -x[2] * x[3] * x[3]
             + 2 * x[1] * x[3] * x[4]
@@ -105,8 +107,8 @@ T packed_determinant_inverse_3(
 
 template <typename T>
 T packed_kinetic_trace_3(
-        const T *__restrict__ a, const T *__restrict__ b,
-        const T *__restrict__ c, const T *__restrict__ m) noexcept {
+        const T *RESTRICT a, const T *RESTRICT b,
+        const T *RESTRICT c, const T *RESTRICT m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -138,7 +140,7 @@ T packed_kinetic_trace_3(
 
 template <typename T>
 T packed_quadratic_form_3(
-        const T *__restrict__ x, const T *__restrict__ v) noexcept {
+        const T *RESTRICT x, const T *RESTRICT v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -149,8 +151,8 @@ T packed_quadratic_form_3(
 
 template <typename T>
 void packed_permutation_conjugate_3(
-        const T *__restrict__ x, const T *__restrict__ p,
-        T *__restrict__ y) noexcept {
+        const T *RESTRICT x, const T *RESTRICT p,
+        T *RESTRICT y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]
@@ -200,7 +202,7 @@ void packed_permutation_conjugate_3(
 
 template <typename T>
 T packed_determinant_inverse_4(
-        const T *__restrict__ x, T *__restrict__ y) noexcept {
+        const T *RESTRICT x, T *RESTRICT y) noexcept {
     const T det =
             x[4] * x[4] * x[6] * x[6]
             - x[2] * x[5] * x[6] * x[6]
@@ -280,8 +282,8 @@ T packed_determinant_inverse_4(
 
 template <typename T>
 T packed_kinetic_trace_4(
-        const T *__restrict__ a, const T *__restrict__ b,
-        const T *__restrict__ c, const T *__restrict__ m) noexcept {
+        const T *RESTRICT a, const T *RESTRICT b,
+        const T *RESTRICT c, const T *RESTRICT m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -350,7 +352,7 @@ T packed_kinetic_trace_4(
 
 template <typename T>
 T packed_quadratic_form_4(
-        const T *__restrict__ x, const T *__restrict__ v) noexcept {
+        const T *RESTRICT x, const T *RESTRICT v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -365,8 +367,8 @@ T packed_quadratic_form_4(
 
 template <typename T>
 void packed_permutation_conjugate_4(
-        const T *__restrict__ x, const T *__restrict__ p,
-        T *__restrict__ y) noexcept {
+        const T *RESTRICT x, const T *RESTRICT p,
+        T *RESTRICT y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]
@@ -507,7 +509,7 @@ void packed_permutation_conjugate_4(
 
 template <typename T>
 T packed_determinant_inverse_5(
-        const T *__restrict__ x, T *__restrict__ y) noexcept {
+        const T *RESTRICT x, T *RESTRICT y) noexcept {
     const T det =
             x[5] * x[7] * x[7] * x[10] * x[10]
             - 2 * x[4] * x[7] * x[8] * x[10] * x[10]
@@ -902,8 +904,8 @@ T packed_determinant_inverse_5(
 
 template <typename T>
 T packed_kinetic_trace_5(
-        const T *__restrict__ a, const T *__restrict__ b,
-        const T *__restrict__ c, const T *__restrict__ m) noexcept {
+        const T *RESTRICT a, const T *RESTRICT b,
+        const T *RESTRICT c, const T *RESTRICT m) noexcept {
     return a[0] * b[0] * c[0] * m[0]
            + a[1] * b[0] * c[1] * m[0]
            + a[0] * b[1] * c[1] * m[0]
@@ -1033,7 +1035,7 @@ T packed_kinetic_trace_5(
 
 template <typename T>
 T packed_quadratic_form_5(
-        const T *__restrict__ x, const T *__restrict__ v) noexcept {
+        const T *RESTRICT x, const T *RESTRICT v) noexcept {
     return v[0] * v[0] * x[0]
            + 2 * v[0] * v[1] * x[1]
            + v[1] * v[1] * x[2]
@@ -1053,8 +1055,8 @@ T packed_quadratic_form_5(
 
 template <typename T>
 void packed_permutation_conjugate_5(
-        const T *__restrict__ x, const T *__restrict__ p,
-        T *__restrict__ y) noexcept {
+        const T *RESTRICT x, const T *RESTRICT p,
+        T *RESTRICT y) noexcept {
     y[0] = p[0] * p[0] * x[0]
            + 2 * p[0] * p[1] * x[1]
            + p[1] * p[1] * x[2]

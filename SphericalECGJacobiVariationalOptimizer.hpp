@@ -16,6 +16,7 @@
 #include <boost/random.hpp> // for boost::random::independent_bits_engine etc.
 
 // Project-specific headers
+#include "Restrict.hpp"
 #include "AmoebaOptimizer.hpp"
 #include "RealVariationalSolver.hpp"
 #include "SphericalECGJacobiContext.hpp"
@@ -95,7 +96,7 @@ namespace zsvm {
         }
 
         T augmented_ground_state_energy(
-                const T *__restrict__ new_basis_matrix) {
+                const T *RESTRICT new_basis_matrix) {
             if (solver.empty()) {
                 T overlap_element, hamiltonian_element;
                 context.evaluate_matrix_elements(
@@ -120,15 +121,15 @@ namespace zsvm {
                     new_hamiltonian_column.data());
         }
 
-        void random_basis_element(T *__restrict__ basis_element) {
+        void random_basis_element(T *RESTRICT basis_element) {
             for (std::size_t i = 0; i < num_parameters; ++i) {
                 basis_element[i] = correlation_distribution(random_engine);
             }
         }
 
         void construct_basis_matrix(
-                T *__restrict__ basis_matrix,
-                const T *__restrict__ basis_element) {
+                T *RESTRICT basis_matrix,
+                const T *RESTRICT basis_element) {
             context.gaussian_parameter_matrix(basis_element, basis_matrix);
         }
 
@@ -215,7 +216,7 @@ namespace zsvm {
 
     public: // =================================================================
 
-        T refine_amoeba(T *__restrict__ basis_element,
+        T refine_amoeba(T *RESTRICT basis_element,
                         const T &initial_step_size,
                         std::size_t max_steps) {
             std::vector<T> basis_matrix(num_parameters);

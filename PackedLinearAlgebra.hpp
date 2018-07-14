@@ -5,6 +5,7 @@
 #include <cmath> // for std::sqrt
 
 // Project-specific headers
+#include "Restrict.hpp"
 #include "PackedLinearAlgebraImpl.hpp"
 
 template <typename T>
@@ -38,21 +39,21 @@ T half_inverse_pow(const T &x, long long int n) {
 
 template <typename T>
 using packed_determinant_inverse_function = T (*)(
-        const T *__restrict__ x, T *__restrict__ y);
+        const T *RESTRICT x, T *RESTRICT y);
 
 template <typename T>
 using packed_kinetic_trace_function = T (*)(
-        const T *__restrict__ a, const T *__restrict__ b,
-        const T *__restrict__ c, const T *__restrict__ m);
+        const T *RESTRICT a, const T *RESTRICT b,
+        const T *RESTRICT c, const T *RESTRICT m);
 
 template <typename T>
 using packed_quadratic_form_function = T (*)(
-        const T *__restrict__ x, const T *__restrict__ v);
+        const T *RESTRICT x, const T *RESTRICT v);
 
 template <typename T>
 using packed_permutation_conjugate_function = void (*)(
-        const T *__restrict__ x, const T *__restrict__ p,
-        T *__restrict__ y);
+        const T *RESTRICT x, const T *RESTRICT p,
+        T *RESTRICT y);
 
 // @formatter:on
 

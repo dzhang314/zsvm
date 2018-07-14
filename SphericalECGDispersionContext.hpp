@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "Restrict.hpp"
 #include "EnumTypes.hpp"
 #include "Particle.hpp"
 #include "PackedLinearAlgebra.hpp"
@@ -46,9 +47,9 @@ namespace zsvm {
                   packed_kinetic_trace(
                           PACKED_KINETIC_TRACE<double>[particles.size() - 1]) {}
 
-        double evaluate_kernel(const double *__restrict__ a,
-                               const double *__restrict__ b,
-                               const double *__restrict__ d) const noexcept {
+        double evaluate_kernel(const double *RESTRICT a,
+                               const double *RESTRICT b,
+                               const double *RESTRICT d) const noexcept {
             return packed_kinetic_trace(a, b, d,
                                         adjusted_carrier_values.data());
         }

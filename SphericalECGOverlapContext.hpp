@@ -7,6 +7,7 @@
 #include <string> // for std::string
 #include <vector> // for std::vector
 
+#include "Restrict.hpp"
 #include "Particle.hpp"
 #include "Permutation.hpp"
 #include "SphericalECGDispersionContext.hpp"
@@ -109,8 +110,8 @@ namespace zsvm {
                           space_dimension, particles, pairwise_potentials)) {}
 
         void evaluate_kernel(
-                double &__restrict__ overlap_kernel,
-                double &__restrict__ hamiltonian_kernel) {
+                double &RESTRICT overlap_kernel,
+                double &RESTRICT hamiltonian_kernel) {
             for (std::size_t k = 0; k < num_parameters; ++k) {
                 c[k] = a[k] + b[k];
             }
@@ -141,8 +142,8 @@ namespace zsvm {
         }
 
         void evaluate_matrix_elements(
-                double &__restrict__ overlap_element,
-                double &__restrict__ hamiltonian_element,
+                double &RESTRICT overlap_element,
+                double &RESTRICT hamiltonian_element,
                 const double *aa, const double *bb) {
             overlap_element = hamiltonian_element = 0.0;
             for (std::size_t p = 0; p < num_permutations; ++p) {

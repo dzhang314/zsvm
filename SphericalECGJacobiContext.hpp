@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 
 // Project-specific headers
+#include "Restrict.hpp"
 #include "JacobiCoordinates.hpp"
 #include "PackedLinearAlgebra.hpp"
 #include "Particle.hpp"
@@ -176,13 +177,13 @@ namespace zsvm {
     private: // ================================== MATRIX ELEMENT HELPER METHODS
 
         void matrix_element_kernel(
-                T &__restrict__ overlap_kernel,
-                T &__restrict__ hamiltonian_kernel) {
+                T &RESTRICT overlap_kernel,
+                T &RESTRICT hamiltonian_kernel) {
             using std::sqrt;
-            T *__restrict__ const ax = vax.data();
-            T *__restrict__ const bx = vbx.data();
-            T *__restrict__ const cx = vcx.data();
-            T *__restrict__ const dx = vdx.data();
+            T *RESTRICT const ax = vax.data();
+            T *RESTRICT const bx = vbx.data();
+            T *RESTRICT const cx = vcx.data();
+            T *RESTRICT const dx = vdx.data();
             for (std::size_t i = 0; i < num_pairs; ++i) {
                 cx[i] = ax[i] + bx[i];
             }
@@ -201,8 +202,8 @@ namespace zsvm {
     public: // ========================================== MATRIX ELEMENT METHODS
 
         void gaussian_parameter_matrix(
-                const T *__restrict__ correlation_coefficients,
-                T *__restrict__ result) const {
+                const T *RESTRICT correlation_coefficients,
+                T *RESTRICT result) const {
             using std::exp;
             for (std::size_t p = 0; p < num_pairs; ++p) { result[p] = 0; }
             for (std::size_t p = 0, k = 0; p < num_pairs; ++p) {
@@ -214,11 +215,11 @@ namespace zsvm {
         }
 
         void evaluate_matrix_elements(
-                T &__restrict__ overlap_element,
-                T &__restrict__ hamiltonian_element,
+                T &RESTRICT overlap_element,
+                T &RESTRICT hamiltonian_element,
                 const T *a, const T *b) {
-            T *__restrict__ const ax = vax.data();
-            T *__restrict__ const bx = vbx.data();
+            T *RESTRICT const ax = vax.data();
+            T *RESTRICT const bx = vbx.data();
             overlap_element = hamiltonian_element = 0;
             T overlap_kernel, hamiltonian_kernel;
             for (std::size_t i = 0; i < num_permutations; ++i) {
