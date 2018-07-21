@@ -10,8 +10,7 @@
 
 template <typename T>
 T half_inverse_pow(const T &x, long long int n) {
-    using std::sqrt;
-    using std::pow;
+    using std::sqrt, std::pow;
     switch (n) {
         case 0:
             return 1;

@@ -1,9 +1,13 @@
+# CMake build files
+/build
+
 # CLion IDE project files
-.idea
-cmake-build-debug
+/.idea
+/cmake-build-debug
 
 # Visual Studio IDE project files
-.vs
+/.vs
+/.vscode
 
 # ZSVM output files
 basis*.txt

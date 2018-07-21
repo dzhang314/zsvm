@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 add_definitions(-DEIGEN_NO_DEBUG=1)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	include_directories(SYSTEM "/mnt/c/Programs/boost_1_67_0")
+	include_directories(SYSTEM "/mnt/c/Programs/eigen-eigen-5a0156e40feb")
     add_compile_options(
         -Wall -Wextra -pedantic -Werror -pedantic-errors
         -O3 -march=native -mtune=native -fopenmp)
